@@ -9,7 +9,7 @@ async function registrarHistorico(leadId, evento, descricao, usuarioId) {
 }
 
 async function listar(req, res) {
-  const { status, unidade_id, responsavel_id, serie, origem, busca, fora_sla, page = 1, limit = 50 } = req.query;
+  const { status, unidade_id, responsavel_id, serie, origem, busca, fora_sla, ano, mes, page = 1, limit = 50 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
   let params = [];
   let where = 'WHERE 1=1';
@@ -19,6 +19,8 @@ async function listar(req, res) {
   if (responsavel_id) { params.push(responsavel_id); where += ` AND l.responsavel_id = $${params.length}`; }
   if (serie) { params.push(`%${serie}%`); where += ` AND l.serie_interesse ILIKE $${params.length}`; }
   if (origem) { params.push(origem); where += ` AND l.origem_lead = $${params.length}`; }
+  if (ano) { params.push(Number(ano)); where += ` AND EXTRACT(YEAR FROM l.created_at) = $${params.length}`; }
+  if (mes) { params.push(Number(mes)); where += ` AND EXTRACT(MONTH FROM l.created_at) = $${params.length}`; }
   if (busca) {
     const buscaVal = `%${busca}%`;
     params.push(buscaVal, buscaVal, buscaVal);
