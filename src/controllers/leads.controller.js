@@ -20,8 +20,10 @@ async function listar(req, res) {
   if (serie) { params.push(`%${serie}%`); where += ` AND l.serie_interesse ILIKE $${params.length}`; }
   if (origem) { params.push(origem); where += ` AND l.origem_lead = $${params.length}`; }
   if (busca) {
-    params.push(`%${busca}%`);
-    where += ` AND (l.nome_responsavel ILIKE $${params.length} OR l.telefone ILIKE $${params.length} OR l.email ILIKE $${params.length})`;
+    const buscaVal = `%${busca}%`;
+    params.push(buscaVal, buscaVal, buscaVal);
+    const p = params.length;
+    where += ` AND (l.nome_responsavel ILIKE $${p - 2} OR l.telefone ILIKE $${p - 1} OR l.email ILIKE $${p})`;
   }
 
   const filtrado = filtrarPorUnidade(req, where, params);
@@ -111,7 +113,7 @@ async function criar(req, res) {
 
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'idade',
-    'serie_interesse', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade'];
+    'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade'];
 
   const sets = [];
   const params = [];
@@ -153,7 +155,7 @@ async function alterarStatus(req, res) {
 
     const etapaAnterior = atual.rows[0].status_atual;
 
-    await db.query('UPDATE leads SET status_atual = $1 WHERE id = $2', [status_atual, req.params.id]);
+    await db.query('UPDATE leads SET status_atual = $1, status_atualizado_em = NOW() WHERE id = $2', [status_atual, req.params.id]);
     await db.query(
       'INSERT INTO movimentacao_funil (lead_id, etapa_anterior, nova_etapa, usuario_id) VALUES ($1, $2, $3, $4)',
       [req.params.id, etapaAnterior, status_atual, req.user.id]
@@ -245,7 +247,7 @@ async function verificarDuplicata(req, res) {
     if (email) { params.push(email); condicoes.push(`email = $${params.length}`); }
 
     const { rows: exatos } = await db.query(
-      `${query} ${telefone ? `telefone = $1` : ''} ${telefone && email ? 'AND' : ''} ${email ? `email = $${params.length}` : ''}`,
+      `SELECT id, nome_responsavel, telefone, email, status_atual FROM leads WHERE ${condicoes.join(' AND ')}`,
       params
     );
 
