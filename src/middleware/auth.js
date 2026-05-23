@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { tokensBloqueados } = require('../controllers/auth.controller');
 
 function authMiddleware(req, res, next) {
   // Permite acesso via API Key para o n8n
@@ -14,6 +15,11 @@ function authMiddleware(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
+
+  if (tokensBloqueados.has(token)) {
+    return res.status(401).json({ erro: 'Token revogado. Faça login novamente.' });
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;

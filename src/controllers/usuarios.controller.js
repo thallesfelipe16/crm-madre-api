@@ -5,7 +5,7 @@ async function listar(req, res) {
   try {
     const { rows } = await db.query(
       `SELECT u.id, u.nome, u.email, u.perfil, u.status, u.unidade_id,
-              un.nome AS unidade_nome, u.created_at, u.last_login_at
+              un.nome AS unidade_nome, u.created_at, u.last_login_at, u.foto_url
        FROM usuarios u
        LEFT JOIN unidades un ON u.unidade_id = un.id
        ORDER BY u.nome`
@@ -112,4 +112,55 @@ async function resetarSenha(req, res) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, inativar, resetarSenha };
+async function atualizarFoto(req, res) {
+  const { foto_url } = req.body;
+  if (!foto_url) return res.status(400).json({ erro: 'foto_url é obrigatório.' });
+  if (!foto_url.startsWith('data:image/')) return res.status(400).json({ erro: 'Formato inválido. Use base64.' });
+  if (Buffer.byteLength(foto_url, 'utf8') > 4 * 1024 * 1024)
+    return res.status(400).json({ erro: 'Imagem muito grande. Máximo 3MB.' });
+
+  // Usuário pode atualizar apenas a própria foto, a menos que seja admin
+  const isAdmin = ['super_admin', 'admin_geral'].includes(req.user.perfil);
+  if (!isAdmin && String(req.user.id) !== String(req.params.id))
+    return res.status(403).json({ erro: 'Sem permissão.' });
+
+  try {
+    const { rows } = await db.query(
+      `UPDATE usuarios SET foto_url = $1 WHERE id = $2 RETURNING id, nome, foto_url`,
+      [foto_url, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    return res.json(rows[0]);
+  } catch (err) {
+    return res.status(500).json({ erro: 'Erro ao atualizar foto.' });
+  }
+}
+
+async function getStats(req, res) {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        u.id, u.nome, u.email, u.perfil, u.status, u.foto_url,
+        un.nome AS unidade_nome,
+        COUNT(DISTINCT l.id)::int AS total_leads,
+        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'novo_lead')::int AS nao_atendidos,
+        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual NOT IN ('novo_lead','perdido','matricula_concluida'))::int AS em_atendimento,
+        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'matricula_concluida')::int AS matriculas,
+        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'perdido')::int AS perdidos,
+        COUNT(DISTINCT o.id)::int AS total_observacoes
+      FROM usuarios u
+      LEFT JOIN unidades un ON u.unidade_id = un.id
+      LEFT JOIN leads l ON l.responsavel_id = u.id
+      LEFT JOIN observacoes o ON o.usuario_id = u.id
+      WHERE u.status = 'ativo' AND u.perfil NOT IN ('n8n_service')
+      GROUP BY u.id, u.nome, u.email, u.perfil, u.status, u.foto_url, un.nome
+      ORDER BY total_leads DESC, u.nome
+    `);
+    return res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar stats:', err);
+    return res.status(500).json({ erro: 'Erro ao buscar estatísticas.' });
+  }
+}
+
+module.exports = { listar, buscarPorId, criar, atualizar, inativar, resetarSenha, atualizarFoto, getStats };

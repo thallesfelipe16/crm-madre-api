@@ -134,4 +134,4 @@ async function perfil(req, res) {
   }
 }
 
-module.exports = { login, logout, recuperarSenha, redefinirSenha, perfil };
+module.exports = { login, logout, recuperarSenha, redefinirSenha, perfil, tokensBloqueados };

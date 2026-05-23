@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const db = require('./config/db');
 
 const authRoutes = require('./routes/auth');
 const leadsRoutes = require('./routes/leads');
@@ -10,9 +11,12 @@ const unidadesRoutes = require('./routes/unidades');
 
 const app = express();
 
+// Aumenta limite para aceitar foto de perfil em base64
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
-app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.0' }));
 
@@ -20,6 +24,17 @@ app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/unidades', unidadesRoutes);
+
+// Migração automática — adiciona colunas novas sem quebrar instâncias existentes
+async function runMigrations() {
+  try {
+    await db.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT`);
+    console.log('Migrações aplicadas com sucesso.');
+  } catch (err) {
+    console.error('Erro nas migrações:', err.message);
+  }
+}
+runMigrations();
 
 app.use((req, res) => res.status(404).json({ erro: 'Rota não encontrada.' }));
 
