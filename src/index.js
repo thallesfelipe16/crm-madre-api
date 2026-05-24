@@ -29,6 +29,8 @@ app.use('/api/unidades', unidadesRoutes);
 async function runMigrations() {
   try {
     await db.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT`);
+    // Permite leads sem unidade (ex: LP Pre College antes de campus definido)
+    await db.query(`ALTER TABLE leads ALTER COLUMN unidade_id DROP NOT NULL`);
     console.log('Migrações aplicadas com sucesso.');
   } catch (err) {
     console.error('Erro nas migrações:', err.message);
