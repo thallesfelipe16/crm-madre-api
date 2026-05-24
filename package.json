@@ -1,6 +1,6 @@
 {
   "name": "crm-madre-api",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "CRM Colégio Madre de Deus - API",
   "main": "src/index.js",
   "scripts": {
