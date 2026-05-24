@@ -82,8 +82,8 @@ async function criar(req, res) {
     utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
   } = req.body;
 
-  if (!nome_responsavel || !telefone || !unidade_id || !serie_interesse) {
-    return res.status(400).json({ erro: 'Campos obrigatórios: nome_responsavel, telefone, unidade_id, serie_interesse.' });
+  if (!nome_responsavel || !telefone || !serie_interesse) {
+    return res.status(400).json({ erro: 'Campos obrigatórios: nome_responsavel, telefone, serie_interesse.' });
   }
 
   try {
