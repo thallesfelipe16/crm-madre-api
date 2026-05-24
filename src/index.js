@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.0' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.2', build: 'relatorio-stats-fix' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
