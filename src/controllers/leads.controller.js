@@ -80,6 +80,7 @@ async function criar(req, res) {
     nome_responsavel, nome_aluno, telefone, email, idade, serie_interesse,
     unidade_id, escola_origem, origem_lead, campanha, canal,
     utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
+    whatsapp_aluno, email_aluno,
   } = req.body;
 
   if (!nome_responsavel || !telefone || !serie_interesse) {
@@ -91,15 +92,17 @@ async function criar(req, res) {
       `INSERT INTO leads (
         nome_responsavel, nome_aluno, telefone, email, idade, serie_interesse,
         unidade_id, escola_origem, origem_lead, campanha, canal,
-        utm_source, utm_medium, utm_campaign, consentimento_comunicacao
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
+        whatsapp_aluno, email_aluno
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
       RETURNING *`,
       [
         nome_responsavel, nome_aluno || null, telefone, email || null,
-        idade || null, serie_interesse, unidade_id, escola_origem || null,
+        idade || null, serie_interesse, unidade_id || null, escola_origem || null,
         origem_lead || null, campanha || null, canal || null,
         utm_source || null, utm_medium || null, utm_campaign || null,
         consentimento_comunicacao || false,
+        whatsapp_aluno || null, email_aluno || null,
       ]
     );
 
@@ -115,7 +118,8 @@ async function criar(req, res) {
 
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'idade',
-    'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade', 'ia_classificacao'];
+    'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade', 'ia_classificacao',
+    'whatsapp_aluno', 'email_aluno'];
 
   const sets = [];
   const params = [];
