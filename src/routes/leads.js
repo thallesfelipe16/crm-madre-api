@@ -5,6 +5,7 @@ const c = require('../controllers/leads.controller');
 
 router.get('/', auth, c.listar);
 router.get('/exportar', auth, c.exportarCSV);
+router.get('/sla-pendentes', auth, c.slaPendentes);
 router.post('/verificar-duplicata', auth, c.verificarDuplicata);
 router.get('/:id', auth, c.buscarPorId);
 router.post('/', auth, c.criar);

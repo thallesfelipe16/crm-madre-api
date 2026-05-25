@@ -27,6 +27,11 @@ async function listar(req, res) {
     const p = params.length;
     where += ` AND (l.nome_responsavel ILIKE $${p - 2} OR l.telefone ILIKE $${p - 1} OR l.email ILIKE $${p})`;
   }
+  // Leads com SLA vencido: parados em etapas iniciais por mais de 24h
+  if (fora_sla === 'true') {
+    where += ` AND l.status_atual IN ('novo_lead', 'primeiro_atendimento', 'contato_realizado', 'visita_agendada')`
+           + ` AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '24 hours'`;
+  }
 
   const filtrado = filtrarPorUnidade(req, where, params);
   where = filtrado.query;
@@ -276,6 +281,33 @@ async function verificarDuplicata(req, res) {
   }
 }
 
+async function slaPendentes(req, res) {
+  // Retorna leads parados em etapas iniciais há mais de X horas (padrão 24h)
+  const horas = Number(req.query.horas) || 24;
+  try {
+    const { rows } = await db.query(
+      `SELECT
+         l.id, l.nome_responsavel, l.nome_aluno, l.telefone, l.email,
+         l.serie_interesse, l.status_atual, l.origem_lead,
+         l.created_at, l.status_atualizado_em,
+         u.nome AS unidade_nome,
+         r.nome AS responsavel_nome, r.email AS responsavel_email,
+         EXTRACT(EPOCH FROM (NOW() - COALESCE(l.status_atualizado_em, l.created_at))) / 3600 AS horas_parado
+       FROM leads l
+       LEFT JOIN unidades u ON l.unidade_id = u.id
+       LEFT JOIN usuarios r ON l.responsavel_id = r.id
+       WHERE l.status_atual IN ('novo_lead', 'primeiro_atendimento', 'contato_realizado', 'visita_agendada')
+         AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - ($1 || ' hours')::INTERVAL
+       ORDER BY horas_parado DESC`,
+      [horas]
+    );
+    return res.json({ total: rows.length, horas_limite: horas, leads: rows });
+  } catch (err) {
+    console.error('Erro ao buscar SLA pendentes:', err);
+    return res.status(500).json({ erro: 'Erro ao buscar leads com SLA vencido.' });
+  }
+}
+
 async function exportarCSV(req, res) {
   const { status, unidade_id, serie } = req.query;
   let params = [];
@@ -321,5 +353,5 @@ async function exportarCSV(req, res) {
 module.exports = {
   listar, buscarPorId, criar, atualizar, alterarStatus,
   atribuirResponsavel, adicionarObservacao, listarHistorico,
-  atualizarIA, verificarDuplicata, exportarCSV,
+  atualizarIA, verificarDuplicata, exportarCSV, slaPendentes,
 };
