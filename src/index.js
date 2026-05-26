@@ -41,8 +41,9 @@ async function runMigrations() {
 }
 runMigrations();
 
-// Página standalone de redefinição de senha (backend serve direto, sem depender do frontend)
+// Página standalone de redefinição de senha — CSP inline liberado para esta rota
 app.get('/redefinir-senha', (req, res) => {
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' https:;");
   const token = req.query.token || '';
   const apiUrl = (process.env.APP_URL || '') + '/api/auth/redefinir-senha';
 
@@ -61,7 +62,8 @@ app.get('/redefinir-senha', (req, res) => {
 '.field{position:relative;margin-bottom:1rem}' +
 'input{width:100%;padding:.625rem 2.5rem .625rem .75rem;border:1.5px solid #d1d5db;border-radius:.5rem;font-size:.875rem;outline:none}' +
 'input:focus{border-color:#1e3a5f}' +
-'.eye{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;font-size:.875rem;padding:0}' +
+'.eye{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;padding:0;line-height:0}' +
+'.eye:hover{color:#6b7280}' +
 '.btn{width:100%;padding:.75rem;background:#e8882a;color:#fff;border:none;border-radius:.625rem;font-size:.9375rem;font-weight:600;cursor:pointer;margin-top:.5rem}' +
 '.btn:disabled{opacity:.6;cursor:not-allowed}' +
 '.erro{padding:.75rem;border-radius:.5rem;font-size:.875rem;margin-bottom:1rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}' +
@@ -75,10 +77,10 @@ app.get('/redefinir-senha', (req, res) => {
     '<div id="msg"></div>' +
     '<div class="field"><label>Nova senha</label>' +
     '<input type="password" id="nova" placeholder="Minimo 6 caracteres" autocomplete="new-password"/>' +
-    '<button class="eye" type="button" onclick="verSenha(\'nova\',this)">&#128065;</button></div>' +
+    '<button class="eye" type="button" onclick="verSenha(\'nova\',this)" aria-label="Mostrar senha"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>' +
     '<div class="field"><label>Confirmar nova senha</label>' +
     '<input type="password" id="conf" placeholder="Repita a nova senha" autocomplete="new-password"/>' +
-    '<button class="eye" type="button" onclick="verSenha(\'conf\',this)">&#128065;</button></div>' +
+    '<button class="eye" type="button" onclick="verSenha(\'conf\',this)" aria-label="Mostrar senha"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>' +
     '<button class="btn" id="btn" onclick="enviar()">Definir nova senha</button>'
   : '<p class="erro">Link invalido ou expirado. Solicite um novo link de recuperacao.</p>' +
     '<a href="/login" style="color:#1e3a5f;font-size:.875rem">Voltar ao login</a>'
@@ -88,10 +90,12 @@ app.get('/redefinir-senha', (req, res) => {
 '<script>' +
 'var TOKEN = "' + token + '";' +
 'var API_URL = "' + apiUrl + '";' +
+'var SVG_EYE = \'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>\';' +
+'var SVG_EYEOFF = \'<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>\';' +
 'function verSenha(id, btn) {' +
 '  var el = document.getElementById(id);' +
 '  el.type = el.type === "password" ? "text" : "password";' +
-'  btn.innerHTML = el.type === "password" ? "&#128065;" : "&#128064;";' +
+'  btn.innerHTML = el.type === "password" ? SVG_EYE : SVG_EYEOFF;' +
 '}' +
 'function enviar() {' +
 '  var nova = document.getElementById("nova").value;' +
