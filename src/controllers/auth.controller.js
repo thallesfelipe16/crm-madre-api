@@ -78,10 +78,13 @@ async function recuperarSenha(req, res) {
     const expira = Date.now() + 3600000; // 1 hora
     tokensRecuperacao.set(token, { userId: rows[0].id, expira });
 
+    const smtpPort = Number(process.env.SMTP_PORT) || 587;
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
+      port: smtpPort,
+      secure: smtpPort === 465,
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      tls: { rejectUnauthorized: false },
     });
 
     const link = `${process.env.APP_URL}/redefinir-senha?token=${token}`;
