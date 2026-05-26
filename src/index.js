@@ -59,8 +59,9 @@ app.get('/redefinir-senha', (req, res) => {
 '.sub{color:#6b7280;font-size:.875rem;margin-bottom:1.5rem}' +
 'label{display:block;font-size:.8125rem;font-weight:500;color:#374151;margin-bottom:.25rem}' +
 '.field{position:relative;margin-bottom:1rem}' +
-'input{width:100%;padding:.625rem .75rem;border:1.5px solid #d1d5db;border-radius:.5rem;font-size:.875rem;outline:none}' +
+'input{width:100%;padding:.625rem 2.5rem .625rem .75rem;border:1.5px solid #d1d5db;border-radius:.5rem;font-size:.875rem;outline:none}' +
 'input:focus{border-color:#1e3a5f}' +
+'.eye{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;font-size:.875rem;padding:0}' +
 '.btn{width:100%;padding:.75rem;background:#e8882a;color:#fff;border:none;border-radius:.625rem;font-size:.9375rem;font-weight:600;cursor:pointer;margin-top:.5rem}' +
 '.btn:disabled{opacity:.6;cursor:not-allowed}' +
 '.erro{padding:.75rem;border-radius:.5rem;font-size:.875rem;margin-bottom:1rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}' +
@@ -73,9 +74,11 @@ app.get('/redefinir-senha', (req, res) => {
     '<p class="sub">Escolha uma nova senha para sua conta.</p>' +
     '<div id="msg"></div>' +
     '<div class="field"><label>Nova senha</label>' +
-    '<input type="password" id="nova" placeholder="Minimo 6 caracteres" autocomplete="new-password"/></div>' +
+    '<input type="password" id="nova" placeholder="Minimo 6 caracteres" autocomplete="new-password"/>' +
+    '<button class="eye" type="button" onclick="verSenha(\'nova\',this)">&#128065;</button></div>' +
     '<div class="field"><label>Confirmar nova senha</label>' +
-    '<input type="password" id="conf" placeholder="Repita a nova senha" autocomplete="new-password"/></div>' +
+    '<input type="password" id="conf" placeholder="Repita a nova senha" autocomplete="new-password"/>' +
+    '<button class="eye" type="button" onclick="verSenha(\'conf\',this)">&#128065;</button></div>' +
     '<button class="btn" id="btn" onclick="enviar()">Definir nova senha</button>'
   : '<p class="erro">Link invalido ou expirado. Solicite um novo link de recuperacao.</p>' +
     '<a href="/login" style="color:#1e3a5f;font-size:.875rem">Voltar ao login</a>'
@@ -85,6 +88,11 @@ app.get('/redefinir-senha', (req, res) => {
 '<script>' +
 'var TOKEN = "' + token + '";' +
 'var API_URL = "' + apiUrl + '";' +
+'function verSenha(id, btn) {' +
+'  var el = document.getElementById(id);' +
+'  el.type = el.type === "password" ? "text" : "password";' +
+'  btn.innerHTML = el.type === "password" ? "&#128065;" : "&#128064;";' +
+'}' +
 'function enviar() {' +
 '  var nova = document.getElementById("nova").value;' +
 '  var conf = document.getElementById("conf").value;' +
