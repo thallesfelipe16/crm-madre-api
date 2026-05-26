@@ -112,6 +112,40 @@ async function resetarSenha(req, res) {
   }
 }
 
+async function alterarSenha(req, res) {
+  const { nova_senha, senha_atual } = req.body;
+  const isAdmin = ['super_admin', 'admin_geral'].includes(req.user.perfil);
+  const isSelf = String(req.user.id) === String(req.params.id);
+
+  if (!isAdmin && !isSelf) {
+    return res.status(403).json({ erro: 'Sem permissão para alterar a senha de outro usuário.' });
+  }
+  if (!nova_senha || nova_senha.length < 6) {
+    return res.status(400).json({ erro: 'Nova senha deve ter ao menos 6 caracteres.' });
+  }
+
+  try {
+    // Usuário comum alterando a própria senha: exige senha atual
+    if (!isAdmin && isSelf) {
+      if (!senha_atual) return res.status(400).json({ erro: 'Informe a senha atual.' });
+      const atual = await db.query('SELECT senha_hash FROM usuarios WHERE id = $1', [req.params.id]);
+      if (!atual.rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+      const valida = await bcrypt.compare(senha_atual, atual.rows[0].senha_hash);
+      if (!valida) return res.status(401).json({ erro: 'Senha atual incorreta.' });
+    }
+
+    const hash = await bcrypt.hash(nova_senha, 10);
+    const { rows } = await db.query(
+      `UPDATE usuarios SET senha_hash = $1 WHERE id = $2 RETURNING id, nome`,
+      [hash, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    return res.json({ mensagem: 'Senha alterada com sucesso.', usuario: rows[0].nome });
+  } catch (err) {
+    return res.status(500).json({ erro: 'Erro ao alterar senha.' });
+  }
+}
+
 async function atualizarFoto(req, res) {
   const { foto_url } = req.body;
   if (!foto_url) return res.status(400).json({ erro: 'foto_url é obrigatório.' });
@@ -163,4 +197,4 @@ async function getStats(req, res) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, inativar, resetarSenha, atualizarFoto, getStats };
+module.exports = { listar, buscarPorId, criar, atualizar, inativar, resetarSenha, alterarSenha, atualizarFoto, getStats };

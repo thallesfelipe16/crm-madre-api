@@ -11,7 +11,7 @@ router.get('/:id', auth, apenasAdmins, c.buscarPorId);
 router.post('/', auth, requirePerfil('super_admin'), c.criar);
 router.put('/:id', auth, apenasAdmins, c.atualizar);
 router.delete('/:id', auth, requirePerfil('super_admin'), c.inativar);
-router.patch('/:id/senha', auth, requirePerfil('super_admin', 'admin_geral'), c.resetarSenha);
+router.patch('/:id/senha', auth, c.alterarSenha);
 router.patch('/:id/foto', auth, c.atualizarFoto);
 
 module.exports = router;
