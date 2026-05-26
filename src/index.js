@@ -111,7 +111,7 @@ app.get('/redefinir-senha', (req, res) => {
 '  xhr.onload = function() {' +
 '    var d = JSON.parse(xhr.responseText);' +
 '    if (xhr.status === 200) {' +
-'      document.querySelector(".card").innerHTML = "<div class=\\"ok\\">Senha redefinida com sucesso!</div><a href=\\"/login\\" class=\\"btn\\" style=\\"display:block;text-align:center;text-decoration:none;margin-top:.5rem\\">Ir para o login</a>";' +
+'      document.querySelector(".card").innerHTML = "<div class=\\"ok\\" style=\\"font-size:1rem;padding:1.25rem\\"><strong>Senha redefinida com sucesso!</strong><br><br>Feche esta aba e acesse o sistema normalmente para fazer login com a nova senha.</div>";' +
 '    } else {' +
 '      msg.innerHTML = "<div class=\\"erro\\">" + (d.erro || "Erro ao redefinir.") + "</div>";' +
 '      btn.disabled = false; btn.textContent = "Definir nova senha";' +
