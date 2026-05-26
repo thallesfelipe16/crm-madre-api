@@ -46,6 +46,7 @@ app.get('/redefinir-senha', (req, res) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' https:;");
   const token = req.query.token || '';
   const apiUrl = (process.env.APP_URL || '') + '/api/auth/redefinir-senha';
+  const frontendUrl = process.env.FRONTEND_URL || '';
 
   const html = '<!DOCTYPE html>' +
 '<html lang="pt-BR"><head>' +
@@ -111,7 +112,9 @@ app.get('/redefinir-senha', (req, res) => {
 '  xhr.onload = function() {' +
 '    var d = JSON.parse(xhr.responseText);' +
 '    if (xhr.status === 200) {' +
-'      document.querySelector(".card").innerHTML = "<div class=\\"ok\\" style=\\"font-size:1rem;padding:1.25rem\\"><strong>Senha redefinida com sucesso!</strong><br><br>Feche esta aba e acesse o sistema normalmente para fazer login com a nova senha.</div>";' +
+'      var loginUrl = "' + frontendUrl + '/login";' +
+'      var botaoLogin = loginUrl.length > 7 ? "<a href=\\"" + loginUrl + "\\" style=\\"display:inline-block;margin-top:1rem;padding:.75rem 1.5rem;background:#e8882a;color:#fff;border-radius:.625rem;text-decoration:none;font-weight:600\\">Ir para o login</a>" : "<p style=\\"margin-top:1rem;font-size:.875rem;color:#6b7280\\">Feche esta aba e acesse o sistema normalmente.</p>";' +
+'      document.querySelector(".card").innerHTML = "<div class=\\"ok\\" style=\\"font-size:1rem;padding:1.25rem;text-align:center\\"><strong>Senha redefinida com sucesso!</strong><br><br>Sua nova senha ja esta ativa.</div>" + botaoLogin;' +
 '    } else {' +
 '      msg.innerHTML = "<div class=\\"erro\\">" + (d.erro || "Erro ao redefinir.") + "</div>";' +
 '      btn.disabled = false; btn.textContent = "Definir nova senha";' +
