@@ -116,7 +116,6 @@ app.get('/redefinir-senha', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
 });
-});
 
 app.use((req, res) => res.status(404).json({ erro: 'Rota não encontrada.' }));
 
