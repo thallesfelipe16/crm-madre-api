@@ -15,5 +15,6 @@ router.patch('/:id/responsavel', auth, requirePerfil('super_admin', 'admin_geral
 router.post('/:id/observacoes', auth, c.adicionarObservacao);
 router.get('/:id/historico', auth, c.listarHistorico);
 router.patch('/:id/ia', auth, c.atualizarIA);
+router.delete('/:id', auth, requirePerfil('super_admin', 'admin_geral'), c.deletar);
 
 module.exports = router;

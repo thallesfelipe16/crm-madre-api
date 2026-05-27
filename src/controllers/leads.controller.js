@@ -350,8 +350,20 @@ async function exportarCSV(req, res) {
   }
 }
 
+async function deletar(req, res) {
+  const { id } = req.params;
+  try {
+    const { rowCount } = await db.query('DELETE FROM leads WHERE id = $1', [id]);
+    if (rowCount === 0) return res.status(404).json({ erro: 'Lead não encontrado.' });
+    return res.json({ mensagem: 'Lead removido com sucesso.' });
+  } catch (err) {
+    console.error('Erro ao deletar lead:', err);
+    return res.status(500).json({ erro: 'Erro interno no servidor.' });
+  }
+}
+
 module.exports = {
   listar, buscarPorId, criar, atualizar, alterarStatus,
   atribuirResponsavel, adicionarObservacao, listarHistorico,
-  atualizarIA, verificarDuplicata, exportarCSV, slaPendentes,
+  atualizarIA, verificarDuplicata, exportarCSV, slaPendentes, deletar,
 };
