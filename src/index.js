@@ -16,7 +16,25 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
+
+// CORS: origens permitidas via env var (separadas por vírgula) ou lista padrão
+const origensPermitidas = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
+  : [
+      'http://localhost:4173',
+      'http://localhost:5173',
+      'https://crm-madre.arcorastudio.com.br',
+    ];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permite requisições sem origin (ex: n8n, Postman, apps mobile)
+    if (!origin) return callback(null, true);
+    if (origensPermitidas.includes(origin)) return callback(null, true);
+    callback(new Error(`Origem não permitida pelo CORS: ${origin}`));
+  },
+  credentials: true,
+}));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.2', build: 'relatorio-stats-fix' }));
 
@@ -34,6 +52,16 @@ async function runMigrations() {
     // Campos do estudante para LP Pre College
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_aluno VARCHAR(20)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_aluno VARCHAR(255)`);
+    // Tabela para tokens de recuperação de senha (substitui armazenamento em memória)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS tokens_recuperacao (
+        token      VARCHAR(64) PRIMARY KEY,
+        usuario_id UUID        NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        expira_em  TIMESTAMPTZ NOT NULL,
+        usado      BOOLEAN     NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
     console.log('Migrações aplicadas com sucesso.');
   } catch (err) {
     console.error('Erro nas migrações:', err.message);

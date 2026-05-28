@@ -5,7 +5,6 @@ const nodemailer = require('nodemailer');
 const db = require('../config/db');
 
 const tokensBloqueados = new Set();
-const tokensRecuperacao = new Map();
 
 async function login(req, res) {
   const { email, senha } = req.body;
@@ -75,8 +74,12 @@ async function recuperarSenha(req, res) {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
-    const expira = Date.now() + 3600000; // 1 hora
-    tokensRecuperacao.set(token, { userId: rows[0].id, expira });
+    // Invalida tokens anteriores do mesmo usuário e salva no banco (sobrevive a deploys)
+    await db.query('UPDATE tokens_recuperacao SET usado = TRUE WHERE usuario_id = $1 AND usado = FALSE', [rows[0].id]);
+    await db.query(
+      'INSERT INTO tokens_recuperacao (token, usuario_id, expira_em) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')',
+      [token, rows[0].id]
+    );
 
     const smtpPort = Number(process.env.SMTP_PORT) || 587;
     const transporter = nodemailer.createTransport({
@@ -108,15 +111,18 @@ async function redefinirSenha(req, res) {
     return res.status(400).json({ erro: 'Token e nova senha são obrigatórios.' });
   }
 
-  const dados = tokensRecuperacao.get(token);
-  if (!dados || dados.expira < Date.now()) {
-    return res.status(400).json({ erro: 'Token inválido ou expirado.' });
-  }
-
   try {
+    const { rows: tokenRows } = await db.query(
+      'SELECT usuario_id FROM tokens_recuperacao WHERE token = $1 AND usado = FALSE AND expira_em > NOW()',
+      [token]
+    );
+    if (!tokenRows[0]) {
+      return res.status(400).json({ erro: 'Token inválido ou expirado.' });
+    }
+
     const hash = await bcrypt.hash(nova_senha, 10);
-    await db.query('UPDATE usuarios SET senha_hash = $1 WHERE id = $2', [hash, dados.userId]);
-    tokensRecuperacao.delete(token);
+    await db.query('UPDATE usuarios SET senha_hash = $1 WHERE id = $2', [hash, tokenRows[0].usuario_id]);
+    await db.query('UPDATE tokens_recuperacao SET usado = TRUE WHERE token = $1', [token]);
     return res.json({ mensagem: 'Senha redefinida com sucesso.' });
   } catch (err) {
     console.error('Erro ao redefinir senha:', err);

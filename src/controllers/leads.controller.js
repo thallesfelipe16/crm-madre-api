@@ -353,8 +353,15 @@ async function exportarCSV(req, res) {
 async function deletar(req, res) {
   const { id } = req.params;
   try {
-    const { rowCount } = await db.query('DELETE FROM leads WHERE id = $1', [id]);
-    if (rowCount === 0) return res.status(404).json({ erro: 'Lead não encontrado.' });
+    // Busca o lead antes de deletar para registrar no histórico
+    const { rows } = await db.query('SELECT nome_responsavel FROM leads WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ erro: 'Lead não encontrado.' });
+
+    await registrarHistorico(id, 'lead_deletado',
+      `Lead "${rows[0].nome_responsavel}" removido permanentemente por ${req.user?.nome || req.user?.email || 'sistema'}.`,
+      req.user?.id || null
+    );
+    await db.query('DELETE FROM leads WHERE id = $1', [id]);
     return res.json({ mensagem: 'Lead removido com sucesso.' });
   } catch (err) {
     console.error('Erro ao deletar lead:', err);
