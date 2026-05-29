@@ -11,7 +11,7 @@ router.get('/:id', auth, c.buscarPorId);
 router.post('/', auth, c.criar);
 router.put('/:id', auth, requirePerfil('super_admin', 'admin_geral', 'gestor_unidade', 'atendente'), c.atualizar);
 router.patch('/:id/status', auth, requirePerfil('super_admin', 'admin_geral', 'gestor_unidade', 'atendente'), c.alterarStatus);
-router.patch('/:id/responsavel', auth, requirePerfil('super_admin', 'admin_geral', 'gestor_unidade'), c.atribuirResponsavel);
+router.patch('/:id/responsavel', auth, requirePerfil('super_admin', 'admin_geral', 'gestor_unidade', 'atendente'), c.atribuirResponsavel);
 router.post('/:id/observacoes', auth, c.adicionarObservacao);
 router.get('/:id/historico', auth, c.listarHistorico);
 router.patch('/:id/ia', auth, c.atualizarIA);
