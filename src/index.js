@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const leadsRoutes = require('./routes/leads');
 const usuariosRoutes = require('./routes/usuarios');
 const unidadesRoutes = require('./routes/unidades');
+const landingPagesRoutes = require('./routes/landing-pages');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/unidades', unidadesRoutes);
+app.use('/api/landing-pages', landingPagesRoutes);
 
 // Migração automática — adiciona colunas novas sem quebrar instâncias existentes
 async function runMigrations() {
@@ -61,6 +63,26 @@ async function runMigrations() {
         usado      BOOLEAN     NOT NULL DEFAULT FALSE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+    // Tabela de configurações das Landing Pages
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS configuracoes_lp (
+        id           VARCHAR(50)  PRIMARY KEY,
+        nome         VARCHAR(100) NOT NULL,
+        url          TEXT,
+        webhook_path VARCHAR(100),
+        ativa        BOOLEAN      NOT NULL DEFAULT TRUE,
+        campanha     VARCHAR(100),
+        origem_lead  VARCHAR(100),
+        updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        updated_by   UUID REFERENCES usuarios(id)
+      )
+    `);
+    await db.query(`
+      INSERT INTO configuracoes_lp (id, nome, url, webhook_path, ativa, campanha, origem_lead) VALUES
+        ('lp_matriculas_2027', 'LP Matrículas 2027', 'https://www.matriculas.colegiomadrededeus.com.br/', 'lp-madre-matriculas',  TRUE, 'matriculas-2027',  'lp_matriculas_2027'),
+        ('lp_pre_college',     'LP Pre College',     'https://precollege.colegiomadrededeus.com.br/',     'lp-madre-pre-college', TRUE, 'pre-college-2027', 'lp_pre_college')
+      ON CONFLICT (id) DO NOTHING
     `);
     console.log('Migrações aplicadas com sucesso.');
   } catch (err) {
