@@ -44,4 +44,18 @@ async function atualizar(req, res) {
   }
 }
 
-module.exports = { listar, atualizar };
+async function buscarPublico(req, res) {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, nome, ativa FROM configuracoes_lp WHERE id = $1',
+      [req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ erro: 'LP não encontrada.' });
+    return res.json({ id: rows[0].id, nome: rows[0].nome, ativa: rows[0].ativa });
+  } catch (err) {
+    console.error('Erro ao buscar LP pública:', err);
+    return res.status(500).json({ erro: 'Erro interno.' });
+  }
+}
+
+module.exports = { listar, atualizar, buscarPublico };
