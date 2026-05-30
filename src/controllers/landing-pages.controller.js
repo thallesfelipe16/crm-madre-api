@@ -58,4 +58,63 @@ async function buscarPublico(req, res) {
   }
 }
 
-module.exports = { listar, atualizar, buscarPublico };
+async function analytics(req, res) {
+  const anoParam = req.query.ano ? parseInt(req.query.ano) : null;
+
+  try {
+    // Anos disponíveis com dados
+    const { rows: anosRows } = await db.query(`
+      SELECT DISTINCT EXTRACT(YEAR FROM l.created_at)::int AS ano
+      FROM leads l
+      INNER JOIN configuracoes_lp c ON l.campanha = c.campanha
+      ORDER BY ano DESC
+    `);
+
+    const anos_disponiveis = anosRows.map(r => r.ano);
+    const anoFiltro = anoParam || anos_disponiveis[0] || new Date().getFullYear();
+
+    // Dados mensais por LP para o ano selecionado
+    const { rows: dadosMensais } = await db.query(`
+      SELECT
+        c.id          AS lp_id,
+        c.nome        AS lp_nome,
+        c.campanha,
+        EXTRACT(MONTH FROM l.created_at)::int AS mes,
+        COUNT(l.id)::int AS total_leads,
+        COUNT(CASE WHEN l.status_atual = 'matricula_concluida' THEN 1 END)::int AS matriculas
+      FROM configuracoes_lp c
+      INNER JOIN leads l ON l.campanha = c.campanha
+      WHERE EXTRACT(YEAR FROM l.created_at) = $1
+      GROUP BY c.id, c.nome, c.campanha, EXTRACT(MONTH FROM l.created_at)
+      ORDER BY mes, c.nome
+    `, [anoFiltro]);
+
+    // Totais anuais por LP
+    const { rows: totaisAnuais } = await db.query(`
+      SELECT
+        c.id          AS lp_id,
+        c.nome        AS lp_nome,
+        c.campanha,
+        COUNT(l.id)::int AS total_leads,
+        COUNT(CASE WHEN l.status_atual = 'matricula_concluida' THEN 1 END)::int AS matriculas,
+        COUNT(CASE WHEN l.created_at >= NOW() - INTERVAL '30 days' THEN 1 END)::int AS leads_30_dias
+      FROM configuracoes_lp c
+      INNER JOIN leads l ON l.campanha = c.campanha
+      WHERE EXTRACT(YEAR FROM l.created_at) = $1
+      GROUP BY c.id, c.nome, c.campanha
+      ORDER BY c.nome
+    `, [anoFiltro]);
+
+    return res.json({
+      anos_disponiveis,
+      ano: anoFiltro,
+      dados_mensais: dadosMensais,
+      totais_anuais: totaisAnuais,
+    });
+  } catch (err) {
+    console.error('Erro ao buscar analytics de LPs:', err);
+    return res.status(500).json({ erro: 'Erro interno.' });
+  }
+}
+
+module.exports = { listar, atualizar, buscarPublico, analytics };
