@@ -152,7 +152,7 @@ async function atualizar(req, res) {
 }
 
 async function alterarStatus(req, res) {
-  const { status_atual } = req.body;
+  const { status_atual, motivo_perda } = req.body;
   const statusValidos = ['novo_lead', 'primeiro_atendimento', 'contato_realizado',
     'visita_agendada', 'visita_realizada', 'em_negociacao', 'matricula_concluida', 'perdido'];
 
@@ -166,12 +166,19 @@ async function alterarStatus(req, res) {
 
     const etapaAnterior = atual.rows[0].status_atual;
 
-    await db.query('UPDATE leads SET status_atual = $1, status_atualizado_em = NOW() WHERE id = $2', [status_atual, req.params.id]);
+    // Salva motivo_perda apenas quando status for 'perdido'; limpa quando sair de perdido
+    const motivoFinal = status_atual === 'perdido' ? (motivo_perda || null) : null;
+
+    await db.query(
+      'UPDATE leads SET status_atual = $1, status_atualizado_em = NOW(), motivo_perda = $2 WHERE id = $3',
+      [status_atual, motivoFinal, req.params.id]
+    );
     await db.query(
       'INSERT INTO movimentacao_funil (lead_id, etapa_anterior, nova_etapa, usuario_id) VALUES ($1, $2, $3, $4)',
       [req.params.id, etapaAnterior, status_atual, req.user.id]
     );
-    await registrarHistorico(req.params.id, 'mudanca_status', `Status alterado de "${etapaAnterior}" para "${status_atual}".`, req.user.id);
+    const motivoDesc = motivoFinal ? ` Motivo: ${motivoFinal}.` : '';
+    await registrarHistorico(req.params.id, 'mudanca_status', `Status alterado de "${etapaAnterior}" para "${status_atual}".${motivoDesc}`, req.user.id);
 
     return res.json({ mensagem: 'Status atualizado.', etapa_anterior: etapaAnterior, novo_status: status_atual });
   } catch (err) {
