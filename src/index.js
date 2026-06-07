@@ -9,6 +9,7 @@ const leadsRoutes = require('./routes/leads');
 const usuariosRoutes = require('./routes/usuarios');
 const unidadesRoutes = require('./routes/unidades');
 const landingPagesRoutes = require('./routes/landing-pages');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/leads', leadsRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/unidades', unidadesRoutes);
 app.use('/api/landing-pages', landingPagesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Migração automática — adiciona colunas novas sem quebrar instâncias existentes
 async function runMigrations() {
