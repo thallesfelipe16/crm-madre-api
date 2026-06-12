@@ -330,9 +330,10 @@ async function exportarCSV(req, res) {
 
   try {
     const { rows } = await db.query(
-      `SELECT l.nome_responsavel, l.nome_aluno, l.telefone, l.email, l.serie_interesse,
-              u.nome AS unidade, l.status_atual, l.ia_classificacao, l.origem_lead,
-              l.campanha, r.nome AS responsavel, l.created_at
+      `SELECT l.nome_responsavel, l.nome_aluno, l.telefone, l.email, l.idade,
+              l.serie_interesse, u.nome AS unidade, l.status_atual, l.ia_classificacao,
+              l.escola_origem, l.whatsapp_aluno, l.email_aluno,
+              l.origem_lead, l.campanha, r.nome AS responsavel, l.created_at
        FROM leads l
        LEFT JOIN unidades u ON l.unidade_id = u.id
        LEFT JOIN usuarios r ON l.responsavel_id = r.id
@@ -340,11 +341,12 @@ async function exportarCSV(req, res) {
       params
     );
 
-    const cabecalho = 'Nome Responsável,Nome Aluno,Telefone,Email,Série,Unidade,Status,Classificação IA,Origem,Campanha,Responsável,Data Entrada';
+    const cabecalho = 'Nome Responsável,Nome Aluno,Telefone,Email,Idade,Série,Unidade,Status,Classificação IA,Escola de Origem,WhatsApp Aluno,E-mail Aluno,Origem,Campanha,Responsável,Data Entrada';
     const linhas = rows.map(r =>
-      [r.nome_responsavel, r.nome_aluno, r.telefone, r.email, r.serie_interesse,
-       r.unidade, r.status_atual, r.ia_classificacao, r.origem_lead, r.campanha,
-       r.responsavel, new Date(r.created_at).toLocaleDateString('pt-BR')]
+      [r.nome_responsavel, r.nome_aluno, r.telefone, r.email, r.idade,
+       r.serie_interesse, r.unidade, r.status_atual, r.ia_classificacao,
+       r.escola_origem, r.whatsapp_aluno, r.email_aluno,
+       r.origem_lead, r.campanha, r.responsavel, new Date(r.created_at).toLocaleDateString('pt-BR')]
       .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
       .join(',')
     );
