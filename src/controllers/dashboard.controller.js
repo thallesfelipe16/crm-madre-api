@@ -88,8 +88,7 @@ async function stats(req, res) {
       `SELECT
          COALESCE(l.serie_interesse, 'Não informado') AS serie,
          COUNT(*) AS total
-       FROM leads l ${where}
-       WHERE l.serie_interesse IS NOT NULL
+       FROM leads l ${where} AND l.serie_interesse IS NOT NULL
        GROUP BY l.serie_interesse
        ORDER BY total DESC
        LIMIT 12`,
@@ -111,8 +110,7 @@ async function stats(req, res) {
       `SELECT
          COALESCE(l.motivo_perda, 'Não informado') AS motivo,
          COUNT(*) AS total
-       FROM leads l ${where}
-       WHERE l.status_atual = 'perdido'
+       FROM leads l ${where} AND l.status_atual = 'perdido'
        GROUP BY l.motivo_perda
        ORDER BY total DESC`,
       params
