@@ -98,8 +98,8 @@ async function criar(req, res) {
         nome_responsavel, nome_aluno, telefone, email, idade, serie_interesse,
         unidade_id, escola_origem, origem_lead, campanha, canal,
         utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
-        whatsapp_aluno, email_aluno
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        whatsapp_aluno, email_aluno, tipo_aluno
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       RETURNING *`,
       [
         nome_responsavel, nome_aluno || null, telefone, email || null,
@@ -107,7 +107,7 @@ async function criar(req, res) {
         origem_lead || null, campanha || null, canal || null,
         utm_source || null, utm_medium || null, utm_campaign || null,
         consentimento_comunicacao || false,
-        whatsapp_aluno || null, email_aluno || null,
+        whatsapp_aluno || null, email_aluno || null, req.body.tipo_aluno || null,
       ]
     );
 
@@ -124,7 +124,7 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'idade',
     'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade', 'ia_classificacao',
-    'whatsapp_aluno', 'email_aluno'];
+    'whatsapp_aluno', 'email_aluno', 'tipo_aluno'];
 
   const sets = [];
   const params = [];
@@ -331,7 +331,7 @@ async function exportarCSV(req, res) {
   try {
     const { rows } = await db.query(
       `SELECT l.nome_responsavel, l.nome_aluno, l.telefone, l.email, l.idade,
-              l.serie_interesse, u.nome AS unidade, l.status_atual, l.ia_classificacao,
+              l.tipo_aluno, l.serie_interesse, u.nome AS unidade, l.status_atual, l.ia_classificacao,
               l.escola_origem, l.whatsapp_aluno, l.email_aluno,
               l.origem_lead, l.campanha, r.nome AS responsavel, l.created_at
        FROM leads l
@@ -341,10 +341,10 @@ async function exportarCSV(req, res) {
       params
     );
 
-    const cabecalho = 'Nome Responsável,Nome Aluno,Telefone,Email,Idade,Série,Unidade,Status,Classificação IA,Escola de Origem,WhatsApp Aluno,E-mail Aluno,Origem,Campanha,Responsável,Data Entrada';
+    const cabecalho = 'Nome Responsável,Nome Aluno,Telefone,Email,Idade,Tipo Aluno,Série,Unidade,Status,Classificação IA,Escola de Origem,WhatsApp Aluno,E-mail Aluno,Origem,Campanha,Responsável,Data Entrada';
     const linhas = rows.map(r =>
       [r.nome_responsavel, r.nome_aluno, r.telefone, r.email, r.idade,
-       r.serie_interesse, r.unidade, r.status_atual, r.ia_classificacao,
+       r.tipo_aluno, r.serie_interesse, r.unidade, r.status_atual, r.ia_classificacao,
        r.escola_origem, r.whatsapp_aluno, r.email_aluno,
        r.origem_lead, r.campanha, r.responsavel, new Date(r.created_at).toLocaleDateString('pt-BR')]
       .map(v => `"${(v || '').toString().replace(/"/g, '""')}"`)
