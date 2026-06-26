@@ -44,6 +44,7 @@ async function login(req, res) {
         email: usuario.email,
         perfil: usuario.perfil,
         unidade_id: usuario.unidade_id,
+        foto_url: usuario.foto_url || null,
       },
     });
   } catch (err) {
