@@ -82,16 +82,16 @@ async function atualizar(req, res) {
   }
 }
 
-async function inativar(req, res) {
+async function excluir(req, res) {
   try {
     const { rows } = await db.query(
-      `UPDATE usuarios SET status = 'inativo' WHERE id = $1 RETURNING id, nome, status`,
+      `DELETE FROM usuarios WHERE id = $1 RETURNING id, nome`,
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado.' });
-    return res.json(rows[0]);
+    return res.json({ mensagem: `Usuário "${rows[0].nome}" excluído com sucesso.` });
   } catch (err) {
-    return res.status(500).json({ erro: 'Erro ao inativar usuário.' });
+    return res.status(500).json({ erro: 'Erro ao excluir usuário.' });
   }
 }
 
@@ -197,4 +197,4 @@ async function getStats(req, res) {
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, inativar, resetarSenha, alterarSenha, atualizarFoto, getStats };
+module.exports = { listar, buscarPorId, criar, atualizar, excluir, resetarSenha, alterarSenha, atualizarFoto, getStats };
