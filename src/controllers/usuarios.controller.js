@@ -5,9 +5,16 @@ async function listar(req, res) {
   try {
     const { rows } = await db.query(
       `SELECT u.id, u.nome, u.email, u.perfil, u.status, u.unidade_id,
-              un.nome AS unidade_nome, u.created_at, u.last_login_at, u.foto_url
+              un.nome AS unidade_nome, u.created_at, u.last_login_at, u.foto_url,
+              COALESCE(
+                json_agg(json_build_object('id', uu.unidade_id, 'nome', un2.nome) ORDER BY un2.nome)
+                FILTER (WHERE uu.unidade_id IS NOT NULL), '[]'
+              ) AS unidades
        FROM usuarios u
        LEFT JOIN unidades un ON u.unidade_id = un.id
+       LEFT JOIN usuario_unidades uu ON uu.usuario_id = u.id
+       LEFT JOIN unidades un2 ON un2.id = uu.unidade_id
+       GROUP BY u.id, u.nome, u.email, u.perfil, u.status, u.unidade_id, un.nome, u.created_at, u.last_login_at, u.foto_url
        ORDER BY u.nome`
     );
     return res.json(rows);
@@ -33,8 +40,18 @@ async function buscarPorId(req, res) {
   }
 }
 
+async function _syncUnidades(client, usuarioId, unidadeIds) {
+  await client.query('DELETE FROM usuario_unidades WHERE usuario_id = $1', [usuarioId]);
+  for (const uid of unidadeIds) {
+    await client.query(
+      'INSERT INTO usuario_unidades (usuario_id, unidade_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [usuarioId, uid]
+    );
+  }
+}
+
 async function criar(req, res) {
-  const { nome, email, senha, perfil, unidade_id } = req.body;
+  const { nome, email, senha, perfil, unidade_ids } = req.body;
   if (!nome || !email || !senha || !perfil) {
     return res.status(400).json({ erro: 'Campos obrigatórios: nome, email, senha, perfil.' });
   }
@@ -44,27 +61,46 @@ async function criar(req, res) {
     return res.status(400).json({ erro: 'Perfil inválido.' });
   }
 
+  const ids = Array.isArray(unidade_ids) ? unidade_ids : [];
+  const primaryId = ids[0] || null;
+
+  const client = await db.pool.connect();
   try {
-    const existe = await db.query('SELECT id FROM usuarios WHERE email = $1', [email.toLowerCase().trim()]);
-    if (existe.rows[0]) return res.status(409).json({ erro: 'E-mail já cadastrado.' });
+    await client.query('BEGIN');
+    const existe = await client.query('SELECT id FROM usuarios WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existe.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ erro: 'E-mail já cadastrado.' });
+    }
 
     const senha_hash = await bcrypt.hash(senha, 10);
-    const { rows } = await db.query(
+    const { rows } = await client.query(
       `INSERT INTO usuarios (nome, email, senha_hash, perfil, unidade_id)
        VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, perfil, status, unidade_id, created_at`,
-      [nome, email.toLowerCase().trim(), senha_hash, perfil, unidade_id || null]
+      [nome, email.toLowerCase().trim(), senha_hash, perfil, primaryId]
     );
+
+    await _syncUnidades(client, rows[0].id, ids);
+    await client.query('COMMIT');
     return res.status(201).json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Erro ao criar usuário:', err);
     return res.status(500).json({ erro: 'Erro ao criar usuário.' });
+  } finally {
+    client.release();
   }
 }
 
 async function atualizar(req, res) {
-  const { nome, email, perfil, unidade_id, status } = req.body;
+  const { nome, email, perfil, unidade_ids, status } = req.body;
+  const ids = Array.isArray(unidade_ids) ? unidade_ids : [];
+  const primaryId = ids[0] || null;
+
+  const client = await db.pool.connect();
   try {
-    const { rows } = await db.query(
+    await client.query('BEGIN');
+    const { rows } = await client.query(
       `UPDATE usuarios SET
         nome = COALESCE($1, nome),
         email = COALESCE($2, email),
@@ -73,12 +109,21 @@ async function atualizar(req, res) {
         status = COALESCE($5, status)
        WHERE id = $6
        RETURNING id, nome, email, perfil, status, unidade_id`,
-      [nome, email?.toLowerCase().trim(), perfil, unidade_id || null, status, req.params.id]
+      [nome, email?.toLowerCase().trim(), perfil, primaryId, status, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    if (!rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    await _syncUnidades(client, req.params.id, ids);
+    await client.query('COMMIT');
     return res.json(rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     return res.status(500).json({ erro: 'Erro ao atualizar usuário.' });
+  } finally {
+    client.release();
   }
 }
 
@@ -125,7 +170,6 @@ async function alterarSenha(req, res) {
   }
 
   try {
-    // Usuário comum alterando a própria senha: exige senha atual
     if (!isAdmin && isSelf) {
       if (!senha_atual) return res.status(400).json({ erro: 'Informe a senha atual.' });
       const atual = await db.query('SELECT senha_hash FROM usuarios WHERE id = $1', [req.params.id]);
@@ -153,7 +197,6 @@ async function atualizarFoto(req, res) {
   if (Buffer.byteLength(foto_url, 'utf8') > 4 * 1024 * 1024)
     return res.status(400).json({ erro: 'Imagem muito grande. Máximo 3MB.' });
 
-  // Usuário pode atualizar apenas a própria foto, a menos que seja admin
   const isAdmin = ['super_admin', 'admin_geral'].includes(req.user.perfil);
   if (!isAdmin && String(req.user.id) !== String(req.params.id))
     return res.status(403).json({ erro: 'Sem permissão.' });
