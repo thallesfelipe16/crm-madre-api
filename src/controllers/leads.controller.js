@@ -289,8 +289,6 @@ async function verificarDuplicata(req, res) {
 }
 
 async function slaPendentes(req, res) {
-  // Retorna leads parados em etapas iniciais há mais de X horas (padrão 24h)
-  const horas = Number(req.query.horas) || 24;
   try {
     const { rows } = await db.query(
       `SELECT
@@ -299,16 +297,28 @@ async function slaPendentes(req, res) {
          l.created_at, l.status_atualizado_em,
          u.nome AS unidade_nome,
          r.nome AS responsavel_nome, r.email AS responsavel_email,
-         EXTRACT(EPOCH FROM (NOW() - COALESCE(l.status_atualizado_em, l.created_at))) / 3600 AS horas_parado
+         EXTRACT(EPOCH FROM (NOW() - COALESCE(l.status_atualizado_em, l.created_at))) / 3600 AS horas_parado,
+         COALESCE(
+           json_agg(DISTINCT jsonb_build_object('email', at.email, 'nome', at.nome))
+           FILTER (WHERE at.email IS NOT NULL), '[]'
+         ) AS atendentes_unidade
        FROM leads l
        LEFT JOIN unidades u ON l.unidade_id = u.id
        LEFT JOIN usuarios r ON l.responsavel_id = r.id
-       WHERE l.status_atual IN ('novo_lead', 'contato_realizado', 'visita_agendada', 'fila_espera')
-         AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - ($1 || ' hours')::INTERVAL
-       ORDER BY horas_parado DESC`,
-      [horas]
+       LEFT JOIN usuario_unidades uu ON uu.unidade_id = l.unidade_id
+       LEFT JOIN usuarios at ON at.id = uu.usuario_id AND at.status = 'ativo'
+         AND at.perfil IN ('atendente', 'gestor_unidade')
+       WHERE (
+         (l.status_atual = 'novo_lead'          AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '24 hours') OR
+         (l.status_atual = 'contato_realizado'  AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '48 hours') OR
+         (l.status_atual = 'visita_agendada'    AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '48 hours') OR
+         (l.status_atual = 'visita_realizada'   AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '72 hours') OR
+         (l.status_atual = 'em_negociacao'      AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '120 hours')
+       )
+       GROUP BY l.id, u.nome, r.nome, r.email
+       ORDER BY horas_parado DESC`
     );
-    return res.json({ total: rows.length, horas_limite: horas, leads: rows });
+    return res.json({ total: rows.length, leads: rows });
   } catch (err) {
     console.error('Erro ao buscar SLA pendentes:', err);
     return res.status(500).json({ erro: 'Erro ao buscar leads com SLA vencido.' });
