@@ -31,7 +31,7 @@ async function stats(req, res) {
           AND l.created_at < NOW() - INTERVAL '24 hours'
         )                                                                         AS sem_atendimento,
         COUNT(*) FILTER (
-          WHERE l.status_atual IN ('novo_lead','primeiro_atendimento','contato_realizado','visita_agendada')
+          WHERE l.status_atual IN ('novo_lead','contato_realizado','visita_agendada','fila_espera')
           AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '24 hours'
         )                                                                         AS sla_critico,
         COUNT(*) FILTER (WHERE l.created_at >= NOW() - INTERVAL '30 days')       AS ultimos_30_dias,

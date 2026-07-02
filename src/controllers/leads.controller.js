@@ -29,7 +29,7 @@ async function listar(req, res) {
   }
   // Leads com SLA vencido: parados em etapas iniciais por mais de 24h
   if (fora_sla === 'true') {
-    where += ` AND l.status_atual IN ('novo_lead', 'primeiro_atendimento', 'contato_realizado', 'visita_agendada')`
+    where += ` AND l.status_atual IN ('novo_lead', 'contato_realizado', 'visita_agendada', 'fila_espera')`
            + ` AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '24 hours'`;
   }
 
@@ -153,8 +153,8 @@ async function atualizar(req, res) {
 
 async function alterarStatus(req, res) {
   const { status_atual, motivo_perda } = req.body;
-  const statusValidos = ['novo_lead', 'primeiro_atendimento', 'contato_realizado',
-    'visita_agendada', 'visita_realizada', 'em_negociacao', 'matricula_concluida', 'perdido'];
+  const statusValidos = ['novo_lead', 'contato_realizado',
+    'visita_agendada', 'visita_realizada', 'em_negociacao', 'fila_espera', 'matricula_concluida', 'perdido'];
 
   if (!statusValidos.includes(status_atual)) {
     return res.status(400).json({ erro: 'Status inválido.' });
@@ -303,7 +303,7 @@ async function slaPendentes(req, res) {
        FROM leads l
        LEFT JOIN unidades u ON l.unidade_id = u.id
        LEFT JOIN usuarios r ON l.responsavel_id = r.id
-       WHERE l.status_atual IN ('novo_lead', 'primeiro_atendimento', 'contato_realizado', 'visita_agendada')
+       WHERE l.status_atual IN ('novo_lead', 'contato_realizado', 'visita_agendada', 'fila_espera')
          AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - ($1 || ' hours')::INTERVAL
        ORDER BY horas_parado DESC`,
       [horas]
