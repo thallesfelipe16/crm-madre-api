@@ -210,7 +210,7 @@ async function adicionarObservacao(req, res) {
       'INSERT INTO observacoes (lead_id, usuario_id, observacao) VALUES ($1, $2, $3) RETURNING *',
       [req.params.id, req.user.id, observacao]
     );
-    await registrarHistorico(req.params.id, 'observacao', 'Nova observação adicionada.', req.user.id);
+    await registrarHistorico(req.params.id, 'observacao', observacao, req.user.id);
     return res.status(201).json(rows[0]);
   } catch (err) {
     return res.status(500).json({ erro: 'Erro ao adicionar observação.' });
