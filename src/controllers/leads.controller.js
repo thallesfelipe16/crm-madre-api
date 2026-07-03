@@ -124,7 +124,7 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'idade',
     'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade', 'ia_classificacao',
-    'whatsapp_aluno', 'email_aluno', 'tipo_aluno'];
+    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura'];
 
   const sets = [];
   const params = [];
