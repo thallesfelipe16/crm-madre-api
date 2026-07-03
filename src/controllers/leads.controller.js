@@ -124,7 +124,7 @@ async function criar(req, res) {
 
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'idade',
-    'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'prioridade', 'ia_classificacao',
+    'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'ia_classificacao',
     'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura'];
 
   const sets = [];
@@ -148,6 +148,7 @@ async function atualizar(req, res) {
     await registrarHistorico(rows[0].id, 'edicao', 'Dados do lead atualizados.', req.user.id);
     return res.json(rows[0]);
   } catch (err) {
+    console.error('Erro ao atualizar lead:', err.message);
     return res.status(500).json({ erro: 'Erro ao atualizar lead.' });
   }
 }
