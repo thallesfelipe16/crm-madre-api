@@ -57,6 +57,7 @@ async function runMigrations() {
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp_aluno VARCHAR(20)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_aluno VARCHAR(255)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS motivo_perda VARCHAR(100)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS temperatura VARCHAR(20)`);
     // Tabela para tokens de recuperação de senha (substitui armazenamento em memória)
     await db.query(`
       CREATE TABLE IF NOT EXISTS tokens_recuperacao (
