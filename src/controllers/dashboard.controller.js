@@ -116,6 +116,20 @@ async function stats(req, res) {
       params
     );
 
+    // ── Por processo de matrícula ─────────────────────────────────
+    const processoResult = await db.query(
+      `SELECT
+         COALESCE(p.nome, 'Não informado') AS processo,
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE l.status_atual = 'matricula_concluida') AS matriculados
+       FROM leads l
+       LEFT JOIN processos_matricula p ON l.processo_id = p.id
+       ${where}
+       GROUP BY p.nome
+       ORDER BY total DESC`,
+      params
+    );
+
     // ── Leads recentes (últimos 5) ────────────────────────────────
     const recentesResult = await db.query(
       `SELECT l.id, l.nome_responsavel, l.nome_aluno, l.serie_interesse,
@@ -150,6 +164,7 @@ async function stats(req, res) {
         por_serie: serieResult.rows.map(r => ({ serie: r.serie, total: parseInt(r.total) })),
         temperatura: tempResult.rows.map(r => ({ classificacao: r.classificacao, total: parseInt(r.total) })),
         motivos_perda: perdaResult.rows.map(r => ({ motivo: r.motivo, total: parseInt(r.total) })),
+        por_processo: processoResult.rows.map(r => ({ processo: r.processo, total: parseInt(r.total), matriculados: parseInt(r.matriculados) })),
       },
       recentes: recentesResult.rows,
     });

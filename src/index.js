@@ -10,6 +10,7 @@ const usuariosRoutes = require('./routes/usuarios');
 const unidadesRoutes = require('./routes/unidades');
 const landingPagesRoutes = require('./routes/landing-pages');
 const dashboardRoutes = require('./routes/dashboard');
+const processosRoutes = require('./routes/processos');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/unidades', unidadesRoutes);
 app.use('/api/landing-pages', landingPagesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/processos', processosRoutes);
 
 // Migração automática — adiciona colunas novas sem quebrar instâncias existentes
 async function runMigrations() {
@@ -58,6 +60,22 @@ async function runMigrations() {
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS email_aluno VARCHAR(255)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS motivo_perda VARCHAR(100)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS temperatura VARCHAR(20)`);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS processos_matricula (
+        id         SERIAL PRIMARY KEY,
+        nome       VARCHAR(100) NOT NULL,
+        ativo      BOOLEAN NOT NULL DEFAULT TRUE,
+        ordem      INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS processo_id INT REFERENCES processos_matricula(id) ON DELETE SET NULL`);
+    await db.query(`
+      INSERT INTO processos_matricula (nome, ativo, ordem) VALUES
+        ('2º Semestre 2026', TRUE, 1),
+        ('Matrículas 2027', TRUE, 2)
+      ON CONFLICT DO NOTHING
+    `);
     // Tabela para tokens de recuperação de senha (substitui armazenamento em memória)
     await db.query(`
       CREATE TABLE IF NOT EXISTS tokens_recuperacao (

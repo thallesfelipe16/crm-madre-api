@@ -9,7 +9,7 @@ async function registrarHistorico(leadId, evento, descricao, usuarioId) {
 }
 
 async function listar(req, res) {
-  const { status, unidade_id, responsavel_id, serie, origem, busca, fora_sla, ano, mes, page = 1, limit = 50 } = req.query;
+  const { status, unidade_id, responsavel_id, serie, origem, busca, fora_sla, ano, mes, processo_id, page = 1, limit = 50 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
   let params = [];
   let where = 'WHERE 1=1';
@@ -21,6 +21,7 @@ async function listar(req, res) {
   if (origem) { params.push(origem); where += ` AND l.origem_lead = $${params.length}`; }
   if (ano) { params.push(Number(ano)); where += ` AND EXTRACT(YEAR FROM l.created_at) = $${params.length}`; }
   if (mes) { params.push(Number(mes)); where += ` AND EXTRACT(MONTH FROM l.created_at) = $${params.length}`; }
+  if (processo_id) { params.push(Number(processo_id)); where += ` AND l.processo_id = $${params.length}`; }
   if (busca) {
     const buscaVal = `%${busca}%`;
     params.push(buscaVal, buscaVal, buscaVal);
@@ -46,10 +47,11 @@ async function listar(req, res) {
 
     params.push(Number(limit), offset);
     const { rows } = await db.query(
-      `SELECT l.*, u.nome AS unidade_nome, r.nome AS responsavel_nome
+      `SELECT l.*, u.nome AS unidade_nome, r.nome AS responsavel_nome, p.nome AS processo_nome
        FROM leads l
        LEFT JOIN unidades u ON l.unidade_id = u.id
        LEFT JOIN usuarios r ON l.responsavel_id = r.id
+       LEFT JOIN processos_matricula p ON l.processo_id = p.id
        ${where}
        ORDER BY l.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -85,7 +87,7 @@ async function criar(req, res) {
     nome_responsavel, nome_aluno, telefone, email, idade, serie_interesse,
     unidade_id, escola_origem, origem_lead, campanha, canal,
     utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
-    whatsapp_aluno, email_aluno, temperatura,
+    whatsapp_aluno, email_aluno, temperatura, processo_id,
   } = req.body;
 
   if (!nome_responsavel || !telefone || !serie_interesse) {
@@ -98,8 +100,8 @@ async function criar(req, res) {
         nome_responsavel, nome_aluno, telefone, email, idade, serie_interesse,
         unidade_id, escola_origem, origem_lead, campanha, canal,
         utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
-        whatsapp_aluno, email_aluno, tipo_aluno, temperatura
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
       RETURNING *`,
       [
         nome_responsavel, nome_aluno || null, telefone, email || null,
@@ -108,7 +110,7 @@ async function criar(req, res) {
         utm_source || null, utm_medium || null, utm_campaign || null,
         consentimento_comunicacao || false,
         whatsapp_aluno || null, email_aluno || null, req.body.tipo_aluno || null,
-        temperatura || null,
+        temperatura || null, processo_id || null,
       ]
     );
 
@@ -125,7 +127,7 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'idade',
     'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'ia_classificacao',
-    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura'];
+    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura', 'processo_id'];
 
   const sets = [];
   const params = [];
