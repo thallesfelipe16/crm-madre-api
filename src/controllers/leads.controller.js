@@ -131,9 +131,11 @@ async function atualizar(req, res) {
 
   const sets = [];
   const params = [];
+  const camposInt = ['processo_id'];
   campos.forEach(campo => {
     if (req.body[campo] !== undefined) {
-      params.push(req.body[campo]);
+      const val = camposInt.includes(campo) && req.body[campo] === '' ? null : req.body[campo];
+      params.push(val);
       sets.push(`${campo} = $${params.length}`);
     }
   });
