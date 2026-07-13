@@ -134,8 +134,8 @@ async function atualizar(req, res) {
   campos.forEach(campo => {
     if (req.body[campo] !== undefined) {
       let val = req.body[campo];
-      if (campo === 'processo_id') {
-        val = val ? parseInt(val, 10) : null;
+      if (['processo_id', 'idade'].includes(campo)) {
+        val = val !== '' && val !== null && val !== undefined ? parseInt(val, 10) : null;
         if (isNaN(val)) val = null;
       } else if (['ia_classificacao', 'temperatura'].includes(campo) && val === '') {
         val = null;
