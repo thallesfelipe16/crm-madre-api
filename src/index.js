@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.2', build: 'relatorio-stats-fix' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.3', build: 'processo-id-fix' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
