@@ -63,18 +63,19 @@ async function runMigrations() {
     await db.query(`
       CREATE TABLE IF NOT EXISTS processos_matricula (
         id         SERIAL PRIMARY KEY,
-        nome       VARCHAR(100) NOT NULL,
+        nome       VARCHAR(100) NOT NULL UNIQUE,
         ativo      BOOLEAN NOT NULL DEFAULT TRUE,
         ordem      INT NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS processo_id INT REFERENCES processos_matricula(id) ON DELETE SET NULL`);
+    await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS processos_matricula_nome_unique ON processos_matricula(nome)`);
     await db.query(`
       INSERT INTO processos_matricula (nome, ativo, ordem) VALUES
         ('2º Semestre 2026', TRUE, 1),
         ('Matrículas 2027', TRUE, 2)
-      ON CONFLICT DO NOTHING
+      ON CONFLICT (nome) DO NOTHING
     `);
     // Tabela para tokens de recuperação de senha (substitui armazenamento em memória)
     await db.query(`
