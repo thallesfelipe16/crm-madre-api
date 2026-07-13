@@ -152,8 +152,8 @@ async function atualizar(req, res) {
     await registrarHistorico(rows[0].id, 'edicao', 'Dados do lead atualizados.', req.user.id);
     return res.json(rows[0]);
   } catch (err) {
-    console.error('Erro ao atualizar lead:', err.message);
-    return res.status(500).json({ erro: 'Erro ao atualizar lead.' });
+    console.error('Erro ao atualizar lead:', err.message, '| sets:', sets, '| params:', params);
+    return res.status(500).json({ erro: err.message });
   }
 }
 
