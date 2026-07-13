@@ -131,10 +131,15 @@ async function atualizar(req, res) {
 
   const sets = [];
   const params = [];
-  const camposNullableVazio = ['processo_id', 'ia_classificacao', 'temperatura'];
   campos.forEach(campo => {
     if (req.body[campo] !== undefined) {
-      const val = camposNullableVazio.includes(campo) && req.body[campo] === '' ? null : req.body[campo];
+      let val = req.body[campo];
+      if (campo === 'processo_id') {
+        val = val ? parseInt(val, 10) : null;
+        if (isNaN(val)) val = null;
+      } else if (['ia_classificacao', 'temperatura'].includes(campo) && val === '') {
+        val = null;
+      }
       params.push(val);
       sets.push(`${campo} = $${params.length}`);
     }
