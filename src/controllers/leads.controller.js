@@ -165,7 +165,7 @@ async function atualizar(req, res) {
 async function alterarStatus(req, res) {
   const { status_atual, motivo_perda } = req.body;
   const statusValidos = ['novo_lead', 'contato_realizado',
-    'visita_agendada', 'visita_realizada', 'em_negociacao', 'fila_espera', 'matricula_concluida', 'perdido'];
+    'visita_agendada', 'visita_realizada', 'em_negociacao', 'fila_espera', 'matricula_concluida', 'reprovado', 'perdido'];
 
   if (!statusValidos.includes(status_atual)) {
     return res.status(400).json({ erro: 'Status inválido.' });

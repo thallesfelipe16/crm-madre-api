@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.5', build: 'int-fields-fix' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.6', build: 'reprovado-status' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -106,6 +106,17 @@ async function runMigrations() {
         ('lp_matriculas_2027', 'LP Matrículas 2027', 'https://www.matriculas.colegiomadrededeus.com.br/', 'lp-madre-matriculas',  TRUE, 'matriculas-2027',  'lp_matriculas_2027'),
         ('lp_pre_college',     'LP Pre College',     'https://precollege.colegiomadrededeus.com.br/',     'lp-madre-pre-college', TRUE, 'pre-college-2027', 'lp_pre_college')
       ON CONFLICT (id) DO NOTHING
+    `);
+    // Adiciona 'reprovado' ao CHECK constraint do status_atual
+    await db.query(`
+      ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_status_atual_check
+    `);
+    await db.query(`
+      ALTER TABLE leads ADD CONSTRAINT leads_status_atual_check
+        CHECK (status_atual IN (
+          'novo_lead','contato_realizado','visita_agendada','visita_realizada',
+          'em_negociacao','fila_espera','matricula_concluida','reprovado','perdido'
+        ))
     `);
     console.log('Migrações aplicadas com sucesso.');
   } catch (err) {
