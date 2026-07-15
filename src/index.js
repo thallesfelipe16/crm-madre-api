@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.6', build: 'reprovado-status' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.7', build: 'nao-autorizado-nascimento' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -107,6 +107,7 @@ async function runMigrations() {
         ('lp_pre_college',     'LP Pre College',     'https://precollege.colegiomadrededeus.com.br/',     'lp-madre-pre-college', TRUE, 'pre-college-2027', 'lp_pre_college')
       ON CONFLICT (id) DO NOTHING
     `);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS data_nascimento_aluno DATE`);
     // Adiciona 'reprovado' ao CHECK constraint do status_atual
     await db.query(`
       ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_status_atual_check
