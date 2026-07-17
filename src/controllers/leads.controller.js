@@ -87,7 +87,7 @@ async function criar(req, res) {
     nome_responsavel, nome_aluno, telefone, email, data_nascimento_aluno, idade, serie_interesse,
     unidade_id, escola_origem, origem_lead, campanha, canal,
     utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
-    whatsapp_aluno, email_aluno, temperatura, processo_id,
+    whatsapp_aluno, email_aluno, temperatura, processo_id, como_conheceu,
   } = req.body;
 
   if (!nome_responsavel || !telefone || !serie_interesse) {
@@ -100,8 +100,8 @@ async function criar(req, res) {
         nome_responsavel, nome_aluno, telefone, email, data_nascimento_aluno, idade, serie_interesse,
         unidade_id, escola_origem, origem_lead, campanha, canal,
         utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
-        whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+        whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id, como_conheceu
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
       RETURNING *`,
       [
         nome_responsavel, nome_aluno || null, telefone, email || null,
@@ -110,7 +110,7 @@ async function criar(req, res) {
         utm_source || null, utm_medium || null, utm_campaign || null,
         consentimento_comunicacao || false,
         whatsapp_aluno || null, email_aluno || null, req.body.tipo_aluno || null,
-        temperatura || null, processo_id || null,
+        temperatura || null, processo_id || null, como_conheceu || null,
       ]
     );
 
@@ -127,7 +127,7 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'data_nascimento_aluno', 'idade',
     'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'ia_classificacao',
-    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura', 'processo_id'];
+    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura', 'processo_id', 'como_conheceu'];
 
   const sets = [];
   const params = [];

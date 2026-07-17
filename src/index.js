@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.7', build: 'nao-autorizado-nascimento' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.8', build: 'como-conheceu' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -108,6 +108,7 @@ async function runMigrations() {
       ON CONFLICT (id) DO NOTHING
     `);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS data_nascimento_aluno DATE`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS como_conheceu VARCHAR(50)`);
     // Adiciona 'reprovado' ao CHECK constraint do status_atual
     await db.query(`
       ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_status_atual_check
