@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.8', build: 'como-conheceu' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.9', build: 'date-null-fix' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);

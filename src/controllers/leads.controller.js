@@ -137,7 +137,7 @@ async function atualizar(req, res) {
       if (['processo_id', 'idade'].includes(campo)) {
         val = val !== '' && val !== null && val !== undefined ? parseInt(val, 10) : null;
         if (isNaN(val)) val = null;
-      } else if (['ia_classificacao', 'temperatura'].includes(campo) && val === '') {
+      } else if (['ia_classificacao', 'temperatura', 'data_nascimento_aluno', 'email', 'email_aluno', 'whatsapp_aluno'].includes(campo) && val === '') {
         val = null;
       }
       params.push(val);
