@@ -76,7 +76,13 @@ async function buscarPorId(req, res) {
       [req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ erro: 'Lead não encontrado.' });
-    return res.json(rows[0]);
+    const lead = rows[0];
+    const { rows: alunos } = await db.query(
+      'SELECT id, nome, data_nascimento, serie_interesse, tipo_aluno FROM lead_alunos WHERE lead_id = $1 ORDER BY id',
+      [lead.id]
+    );
+    lead.alunos = alunos;
+    return res.json(lead);
   } catch (err) {
     return res.status(500).json({ erro: 'Erro ao buscar lead.' });
   }
@@ -88,10 +94,22 @@ async function criar(req, res) {
     unidade_id, escola_origem, origem_lead, campanha, canal,
     utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
     whatsapp_aluno, email_aluno, temperatura, processo_id, como_conheceu,
+    responsavel_2_nome, responsavel_2_telefone, responsavel_2_email,
+    tipo_aluno, alunos,
   } = req.body;
 
-  if (!nome_responsavel || !telefone || !serie_interesse) {
-    return res.status(400).json({ erro: 'Campos obrigatórios: nome_responsavel, telefone, serie_interesse.' });
+  if (!nome_responsavel || !telefone) {
+    return res.status(400).json({ erro: 'Campos obrigatórios: nome_responsavel, telefone.' });
+  }
+
+  // Aceita alunos[] (novo frontend) ou campos legados (n8n)
+  const alunosArr = Array.isArray(alunos) && alunos.length > 0 ? alunos : null;
+  const serieInteresse = alunosArr
+    ? (alunosArr[0]?.serie_interesse || serie_interesse || null)
+    : (serie_interesse || null);
+
+  if (!serieInteresse) {
+    return res.status(400).json({ erro: 'Série de Interesse é obrigatória.' });
   }
 
   try {
@@ -100,23 +118,42 @@ async function criar(req, res) {
         nome_responsavel, nome_aluno, telefone, email, data_nascimento_aluno, idade, serie_interesse,
         unidade_id, escola_origem, origem_lead, campanha, canal,
         utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
-        whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id, como_conheceu
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+        whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id, como_conheceu,
+        responsavel_2_nome, responsavel_2_telefone, responsavel_2_email
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
       RETURNING *`,
       [
-        nome_responsavel, nome_aluno || null, telefone, email || null,
-        data_nascimento_aluno || null, idade || null, serie_interesse, unidade_id || null, escola_origem || null,
+        nome_responsavel,
+        alunosArr ? (alunosArr[0]?.nome || null) : (nome_aluno || null),
+        telefone, email || null,
+        alunosArr ? (alunosArr[0]?.data_nascimento || null) : (data_nascimento_aluno || null),
+        idade || null, serieInteresse, unidade_id || null, escola_origem || null,
         origem_lead || null, campanha || null, canal || null,
         utm_source || null, utm_medium || null, utm_campaign || null,
         consentimento_comunicacao || false,
-        whatsapp_aluno || null, email_aluno || null, req.body.tipo_aluno || null,
+        whatsapp_aluno || null, email_aluno || null,
+        alunosArr ? (alunosArr[0]?.tipo_aluno || null) : (tipo_aluno || null),
         temperatura || null, processo_id || null, como_conheceu || null,
+        responsavel_2_nome || null, responsavel_2_telefone || null, responsavel_2_email || null,
       ]
     );
 
     const lead = rows[0];
-    await registrarHistorico(lead.id, 'criacao', `Lead criado via ${req.user.perfil === 'n8n_service' ? 'integração automática' : 'cadastro manual'}.`, req.user.id);
 
+    // Cria entradas em lead_alunos
+    const alunosParaCriar = alunosArr || (
+      (nome_aluno || serieInteresse) ? [{ nome: nome_aluno || null, data_nascimento: data_nascimento_aluno || null, serie_interesse: serieInteresse, tipo_aluno: tipo_aluno || null }] : []
+    );
+    for (const a of alunosParaCriar) {
+      if (a.nome || a.serie_interesse) {
+        await db.query(
+          'INSERT INTO lead_alunos (lead_id, nome, data_nascimento, serie_interesse, tipo_aluno) VALUES ($1,$2,$3,$4,$5)',
+          [lead.id, a.nome || null, a.data_nascimento || null, a.serie_interesse || null, a.tipo_aluno || null]
+        );
+      }
+    }
+
+    await registrarHistorico(lead.id, 'criacao', `Lead criado via ${req.user.perfil === 'n8n_service' ? 'integração automática' : 'cadastro manual'}.`, req.user.id);
     return res.status(201).json(lead);
   } catch (err) {
     console.error('Erro ao criar lead:', err);
@@ -127,7 +164,8 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'data_nascimento_aluno', 'idade',
     'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'ia_classificacao',
-    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura', 'processo_id', 'como_conheceu'];
+    'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura', 'processo_id', 'como_conheceu',
+    'responsavel_2_nome', 'responsavel_2_telefone', 'responsavel_2_email'];
 
   const sets = [];
   const params = [];
@@ -137,7 +175,8 @@ async function atualizar(req, res) {
       if (['processo_id', 'idade'].includes(campo)) {
         val = val !== '' && val !== null && val !== undefined ? parseInt(val, 10) : null;
         if (isNaN(val)) val = null;
-      } else if (['ia_classificacao', 'temperatura', 'data_nascimento_aluno', 'email', 'email_aluno', 'whatsapp_aluno'].includes(campo) && val === '') {
+      } else if (['ia_classificacao', 'temperatura', 'data_nascimento_aluno', 'email', 'email_aluno', 'whatsapp_aluno',
+                  'responsavel_2_nome', 'responsavel_2_telefone', 'responsavel_2_email'].includes(campo) && val === '') {
         val = null;
       }
       params.push(val);
@@ -145,20 +184,50 @@ async function atualizar(req, res) {
     }
   });
 
-  if (sets.length === 0) return res.status(400).json({ erro: 'Nenhum campo para atualizar.' });
+  const alunos = Array.isArray(req.body.alunos) ? req.body.alunos : null;
 
-  params.push(req.params.id);
+  // Se alunos fornecidos, mantém serie_interesse no lead sincronizado com o primeiro aluno
+  if (alunos && alunos.length > 0 && req.body.serie_interesse === undefined) {
+    const primeirasSerie = alunos[0]?.serie_interesse || null;
+    if (primeirasSerie) {
+      params.push(primeirasSerie);
+      sets.push(`serie_interesse = $${params.length}`);
+    }
+  }
+
+  if (sets.length === 0 && !alunos) return res.status(400).json({ erro: 'Nenhum campo para atualizar.' });
+
   try {
-    const { rows } = await db.query(
-      `UPDATE leads SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
-    );
-    if (!rows[0]) return res.status(404).json({ erro: 'Lead não encontrado.' });
-    await registrarHistorico(rows[0].id, 'edicao', 'Dados do lead atualizados.', req.user.id);
-    return res.json(rows[0]);
+    if (sets.length > 0) {
+      params.push(req.params.id);
+      const { rows } = await db.query(
+        `UPDATE leads SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+        params
+      );
+      if (!rows[0]) return res.status(404).json({ erro: 'Lead não encontrado.' });
+    } else {
+      const exists = await db.query('SELECT id FROM leads WHERE id = $1', [req.params.id]);
+      if (!exists.rows[0]) return res.status(404).json({ erro: 'Lead não encontrado.' });
+    }
+
+    if (alunos) {
+      await db.query('DELETE FROM lead_alunos WHERE lead_id = $1', [req.params.id]);
+      for (const a of alunos) {
+        if (a.nome || a.serie_interesse) {
+          await db.query(
+            'INSERT INTO lead_alunos (lead_id, nome, data_nascimento, serie_interesse, tipo_aluno) VALUES ($1,$2,$3,$4,$5)',
+            [req.params.id, a.nome || null, a.data_nascimento || null, a.serie_interesse || null, a.tipo_aluno || null]
+          );
+        }
+      }
+    }
+
+    await registrarHistorico(req.params.id, 'edicao', 'Dados do lead atualizados.', req.user.id);
+    const { rows: updRows } = await db.query('SELECT * FROM leads WHERE id = $1', [req.params.id]);
+    return res.json(updRows[0]);
   } catch (err) {
-    console.error('Erro ao atualizar lead:', err.message, '| sets:', sets, '| params:', params);
-    return res.status(500).json({ erro: err.message });
+    console.error('Erro ao atualizar lead:', err.message);
+    return res.status(500).json({ erro: 'Erro ao atualizar lead.' });
   }
 }
 

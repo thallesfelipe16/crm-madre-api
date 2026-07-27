@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.0.9', build: 'date-null-fix' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.1.0', build: 'multi-aluno-resp2' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -109,6 +109,28 @@ async function runMigrations() {
     `);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS data_nascimento_aluno DATE`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS como_conheceu VARCHAR(50)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS responsavel_2_nome VARCHAR(255)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS responsavel_2_telefone VARCHAR(20)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS responsavel_2_email VARCHAR(255)`);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS lead_alunos (
+        id               SERIAL PRIMARY KEY,
+        lead_id          UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+        nome             VARCHAR(255),
+        data_nascimento  DATE,
+        serie_interesse  VARCHAR(100),
+        tipo_aluno       VARCHAR(50),
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    // Migra dados existentes de alunos para a tabela lead_alunos
+    await db.query(`
+      INSERT INTO lead_alunos (lead_id, nome, data_nascimento, serie_interesse, tipo_aluno)
+      SELECT id, nome_aluno, data_nascimento_aluno, serie_interesse, tipo_aluno
+      FROM leads
+      WHERE (nome_aluno IS NOT NULL OR serie_interesse IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM lead_alunos la WHERE la.lead_id = leads.id)
+    `);
     // Adiciona 'reprovado' ao CHECK constraint do status_atual
     await db.query(`
       ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_status_atual_check
