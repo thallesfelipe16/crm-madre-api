@@ -82,6 +82,20 @@ async function buscarPorId(req, res) {
       [lead.id]
     );
     lead.alunos = alunos;
+
+    // Retorna todos os leads vinculados (mesma família/pai)
+    const raizId = lead.vinculo_lead_id || lead.id;
+    const { rows: vinculados } = await db.query(
+      `SELECT l.id, l.unidade_id, u.nome AS unidade_nome, l.status_atual,
+              la.nome AS primeiro_aluno, la.serie_interesse AS primeiro_aluno_serie
+       FROM leads l
+       LEFT JOIN unidades u ON l.unidade_id = u.id
+       LEFT JOIN LATERAL (SELECT nome, serie_interesse FROM lead_alunos WHERE lead_id = l.id ORDER BY id LIMIT 1) la ON true
+       WHERE (l.vinculo_lead_id = $1 OR l.id = $1) AND l.id != $2`,
+      [raizId, lead.id]
+    );
+    lead.vinculados = vinculados;
+
     return res.json(lead);
   } catch (err) {
     return res.status(500).json({ erro: 'Erro ao buscar lead.' });
@@ -95,7 +109,7 @@ async function criar(req, res) {
     utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
     whatsapp_aluno, email_aluno, temperatura, processo_id, como_conheceu,
     responsavel_2_nome, responsavel_2_telefone, responsavel_2_email,
-    tipo_aluno, alunos,
+    tipo_aluno, alunos, vinculo_lead_id,
   } = req.body;
 
   if (!nome_responsavel || !telefone) {
@@ -119,8 +133,8 @@ async function criar(req, res) {
         unidade_id, escola_origem, origem_lead, campanha, canal,
         utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
         whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id, como_conheceu,
-        responsavel_2_nome, responsavel_2_telefone, responsavel_2_email
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+        responsavel_2_nome, responsavel_2_telefone, responsavel_2_email, vinculo_lead_id
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
       RETURNING *`,
       [
         nome_responsavel,
@@ -135,6 +149,7 @@ async function criar(req, res) {
         alunosArr ? (alunosArr[0]?.tipo_aluno || null) : (tipo_aluno || null),
         temperatura || null, processo_id || null, como_conheceu || null,
         responsavel_2_nome || null, responsavel_2_telefone || null, responsavel_2_email || null,
+        vinculo_lead_id || null,
       ]
     );
 
