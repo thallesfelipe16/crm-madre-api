@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.1.1', build: 'vinculo-lead' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.2.0', build: 'edital-necessidade' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -124,6 +124,9 @@ async function runMigrations() {
       )
     `);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS vinculo_lead_id UUID REFERENCES leads(id) ON DELETE SET NULL`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS edital_aceito BOOLEAN`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS necessidade_especial VARCHAR(10)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS adaptacoes TEXT`);
     // Migra dados existentes de alunos para a tabela lead_alunos
     await db.query(`
       INSERT INTO lead_alunos (lead_id, nome, data_nascimento, serie_interesse, tipo_aluno)

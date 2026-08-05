@@ -110,6 +110,7 @@ async function criar(req, res) {
     whatsapp_aluno, email_aluno, temperatura, processo_id, como_conheceu,
     responsavel_2_nome, responsavel_2_telefone, responsavel_2_email,
     tipo_aluno, alunos, vinculo_lead_id,
+    edital_aceito, necessidade_especial, adaptacoes,
   } = req.body;
 
   if (!nome_responsavel || !telefone) {
@@ -133,8 +134,9 @@ async function criar(req, res) {
         unidade_id, escola_origem, origem_lead, campanha, canal,
         utm_source, utm_medium, utm_campaign, consentimento_comunicacao,
         whatsapp_aluno, email_aluno, tipo_aluno, temperatura, processo_id, como_conheceu,
-        responsavel_2_nome, responsavel_2_telefone, responsavel_2_email, vinculo_lead_id
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
+        responsavel_2_nome, responsavel_2_telefone, responsavel_2_email, vinculo_lead_id,
+        edital_aceito, necessidade_especial, adaptacoes
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
       RETURNING *`,
       [
         nome_responsavel,
@@ -150,6 +152,9 @@ async function criar(req, res) {
         temperatura || null, processo_id || null, como_conheceu || null,
         responsavel_2_nome || null, responsavel_2_telefone || null, responsavel_2_email || null,
         vinculo_lead_id || null,
+        edital_aceito != null ? Boolean(edital_aceito) : null,
+        necessidade_especial || null,
+        adaptacoes || null,
       ]
     );
 
@@ -180,7 +185,8 @@ async function atualizar(req, res) {
   const campos = ['nome_responsavel', 'nome_aluno', 'telefone', 'email', 'data_nascimento_aluno', 'idade',
     'serie_interesse', 'unidade_id', 'escola_origem', 'origem_lead', 'campanha', 'canal', 'ia_classificacao',
     'whatsapp_aluno', 'email_aluno', 'tipo_aluno', 'temperatura', 'processo_id', 'como_conheceu',
-    'responsavel_2_nome', 'responsavel_2_telefone', 'responsavel_2_email'];
+    'responsavel_2_nome', 'responsavel_2_telefone', 'responsavel_2_email',
+    'edital_aceito', 'necessidade_especial', 'adaptacoes'];
 
   const sets = [];
   const params = [];
