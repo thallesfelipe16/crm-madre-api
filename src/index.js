@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.2.0', build: 'edital-necessidade' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.3.0', build: 'novos-campi-2027' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -127,6 +127,13 @@ async function runMigrations() {
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS edital_aceito BOOLEAN`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS necessidade_especial VARCHAR(10)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS adaptacoes TEXT`);
+    // Campus Pre College e Berçário (novos campi 2027)
+    await db.query(`
+      INSERT INTO unidades (id, nome, endereco_resumido) VALUES
+        ('b1ab744e-c326-4cd8-9404-24aee3b7f9d6', 'Campus Pre College', 'Boa Viagem'),
+        ('c2a5e3f7-8b4d-4c2e-9f1a-7b3d5e9c0f2a', 'Campus Berçário — Zona Norte', 'Zona Norte')
+      ON CONFLICT (id) DO NOTHING
+    `);
     // Migra dados existentes de alunos para a tabela lead_alunos
     await db.query(`
       INSERT INTO lead_alunos (lead_id, nome, data_nascimento, serie_interesse, tipo_aluno)
