@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.3.0', build: 'novos-campi-2027' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.4.0', build: 'endereco-cpf-cep' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -127,6 +127,10 @@ async function runMigrations() {
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS edital_aceito BOOLEAN`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS necessidade_especial VARCHAR(10)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS adaptacoes TEXT`);
+    // Campos de endereço e CPF coletados na LP Matrículas
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS cpf_responsavel VARCHAR(20)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS endereco VARCHAR(255)`);
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS cep VARCHAR(10)`);
     // Campus Pre College e Berçário (novos campi 2027)
     await db.query(`
       INSERT INTO unidades (id, nome, endereco_resumido) VALUES
