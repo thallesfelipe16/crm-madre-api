@@ -20,11 +20,16 @@ function requirePerfil(...perfisPermitidos) {
 }
 
 function filtrarPorUnidade(req, query, params) {
-  const { perfil, unidade_id } = req.user;
+  const { perfil, unidade_id, unidade_ids } = req.user;
   const podeVerTudo = ['super_admin', 'admin_geral', 'marketing_bi', 'n8n_service'].includes(perfil);
-  if (!podeVerTudo && unidade_id) {
-    params.push(unidade_id);
-    query += ` AND l.unidade_id = $${params.length}`;
+  if (!podeVerTudo) {
+    const ids = Array.isArray(unidade_ids) && unidade_ids.length > 0
+      ? unidade_ids
+      : (unidade_id ? [unidade_id] : []);
+    if (ids.length > 0) {
+      params.push(ids);
+      query += ` AND l.unidade_id = ANY($${params.length}::uuid[])`;
+    }
   }
   return { query, params };
 }

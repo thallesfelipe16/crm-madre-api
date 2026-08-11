@@ -30,8 +30,14 @@ async function login(req, res) {
 
     await db.query('UPDATE usuarios SET last_login_at = NOW() WHERE id = $1', [usuario.id]);
 
+    const { rows: uuRows } = await db.query(
+      'SELECT unidade_id FROM usuario_unidades WHERE usuario_id = $1',
+      [usuario.id]
+    );
+    const unidade_ids = uuRows.map(r => r.unidade_id);
+
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, perfil: usuario.perfil, unidade_id: usuario.unidade_id, nome: usuario.nome },
+      { id: usuario.id, email: usuario.email, perfil: usuario.perfil, unidade_id: usuario.unidade_id, unidade_ids, nome: usuario.nome },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
@@ -44,6 +50,7 @@ async function login(req, res) {
         email: usuario.email,
         perfil: usuario.perfil,
         unidade_id: usuario.unidade_id,
+        unidade_ids,
         foto_url: usuario.foto_url || null,
       },
     });

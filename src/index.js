@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.4.0', build: 'endereco-cpf-cep' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.5.0', build: 'multi-unidade-filter' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
