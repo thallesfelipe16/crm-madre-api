@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.5.0', build: 'multi-unidade-filter' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.6.0', build: 'teste-agendado' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -154,7 +154,7 @@ async function runMigrations() {
       ALTER TABLE leads ADD CONSTRAINT leads_status_atual_check
         CHECK (status_atual IN (
           'novo_lead','contato_realizado','visita_agendada','visita_realizada',
-          'em_negociacao','fila_espera','matricula_concluida','reprovado','perdido'
+          'teste_agendado','em_negociacao','fila_espera','matricula_concluida','reprovado','perdido'
         ))
     `);
     console.log('Migrações aplicadas com sucesso.');
