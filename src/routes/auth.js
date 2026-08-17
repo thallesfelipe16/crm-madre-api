@@ -9,7 +9,7 @@ const loginLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
+  validate: false,
   message: { erro: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
 });
 
@@ -19,7 +19,7 @@ const recuperarLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
+  validate: false,
   message: { erro: 'Muitas solicitações. Tente novamente em 1 hora.' },
 });
 
