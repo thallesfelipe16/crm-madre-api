@@ -14,6 +14,9 @@ const processosRoutes = require('./routes/processos');
 
 const app = express();
 
+// Necessário para express-rate-limit funcionar atrás de proxy reverso (Cloudflare/nginx)
+app.set('trust proxy', 1);
+
 // Aumenta limite para aceitar foto de perfil em base64
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
