@@ -293,6 +293,22 @@ async function alterarStatus(req, res) {
   }
 }
 
+async function alterarTaxa(req, res) {
+  const { taxa_paga } = req.body;
+  if (typeof taxa_paga !== 'boolean') return res.status(400).json({ erro: 'taxa_paga deve ser boolean.' });
+  try {
+    const { rows } = await db.query(
+      'UPDATE leads SET taxa_paga = $1 WHERE id = $2 RETURNING taxa_paga',
+      [taxa_paga, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ erro: 'Lead não encontrado.' });
+    await registrarHistorico(req.params.id, 'taxa', taxa_paga ? 'Taxa de teste marcada como paga (R$ 356).' : 'Taxa de teste marcada como não paga.', req.user.id);
+    return res.json({ taxa_paga: rows[0].taxa_paga });
+  } catch (err) {
+    return res.status(500).json({ erro: 'Erro ao atualizar taxa.' });
+  }
+}
+
 async function atribuirResponsavel(req, res) {
   const { responsavel_id } = req.body;
   try {
@@ -496,7 +512,7 @@ async function deletar(req, res) {
 }
 
 module.exports = {
-  listar, buscarPorId, criar, atualizar, alterarStatus,
+  listar, buscarPorId, criar, atualizar, alterarStatus, alterarTaxa,
   atribuirResponsavel, adicionarObservacao, listarHistorico,
   atualizarIA, verificarDuplicata, exportarCSV, slaPendentes, deletar,
 };

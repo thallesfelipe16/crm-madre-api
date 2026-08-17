@@ -39,7 +39,7 @@ app.use(cors({
   credentials: true,
 }));
 
-app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.6.0', build: 'teste-agendado' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', versao: '1.7.0', build: 'taxa-paga' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);
@@ -128,6 +128,7 @@ async function runMigrations() {
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS necessidade_especial VARCHAR(10)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS adaptacoes TEXT`);
     // Campos de endereço e CPF coletados na LP Matrículas
+    await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS taxa_paga BOOLEAN DEFAULT FALSE`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS cpf_responsavel VARCHAR(20)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS endereco VARCHAR(255)`);
     await db.query(`ALTER TABLE leads ADD COLUMN IF NOT EXISTS cep VARCHAR(10)`);
