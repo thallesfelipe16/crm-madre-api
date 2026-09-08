@@ -147,7 +147,7 @@ async function criar(req, res) {
         telefone, email || null,
         alunosArr ? (alunosArr[0]?.data_nascimento || null) : (data_nascimento_aluno || null),
         idade || null, serieInteresse, unidade_id || null, escola_origem || null,
-        origem_lead || null, campanha || null, canal || null,
+        origem_lead || 'manual', campanha || null, canal || null,
         utm_source || null, utm_medium || null, utm_campaign || null,
         consentimento_comunicacao || false,
         whatsapp_aluno || null, email_aluno || null,
