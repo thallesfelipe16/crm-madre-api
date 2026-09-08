@@ -47,7 +47,8 @@ async function listar(req, res) {
 
     params.push(Number(limit), offset);
     const { rows } = await db.query(
-      `SELECT l.*, u.nome AS unidade_nome, r.nome AS responsavel_nome, p.nome AS processo_nome
+      `SELECT l.*, u.nome AS unidade_nome, r.nome AS responsavel_nome, p.nome AS processo_nome,
+              (SELECT COUNT(*) FROM lead_alunos WHERE lead_id = l.id)::int AS num_alunos
        FROM leads l
        LEFT JOIN unidades u ON l.unidade_id = u.id
        LEFT JOIN usuarios r ON l.responsavel_id = r.id

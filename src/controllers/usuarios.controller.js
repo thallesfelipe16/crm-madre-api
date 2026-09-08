@@ -222,7 +222,9 @@ async function getStats(req, res) {
         COUNT(DISTINCT l.id)::int AS total_leads,
         COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'novo_lead')::int AS nao_atendidos,
         COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual NOT IN ('novo_lead','perdido','matricula_concluida'))::int AS em_atendimento,
-        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'matricula_concluida')::int AS matriculas,
+        SUM(CASE WHEN l.status_atual = 'matricula_concluida'
+             THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))::int
+             ELSE 0 END) AS matriculas,
         COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'perdido')::int AS perdidos,
         COUNT(DISTINCT o.id)::int AS total_observacoes
       FROM usuarios u

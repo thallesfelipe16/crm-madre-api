@@ -22,7 +22,9 @@ async function stats(req, res) {
     const kpiResult = await db.query(
       `SELECT
         COUNT(*)                                                                  AS total,
-        COUNT(*) FILTER (WHERE l.status_atual = 'matricula_concluida')           AS matriculados,
+        SUM(CASE WHEN l.status_atual = 'matricula_concluida'
+             THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))::int
+             ELSE 0 END)                                                          AS matriculados,
         COUNT(*) FILTER (WHERE l.status_atual = 'perdido')                       AS perdidos,
         COUNT(*) FILTER (WHERE l.status_atual = 'visita_agendada')               AS visitas_agendadas,
         COUNT(*) FILTER (WHERE l.status_atual NOT IN ('matricula_concluida','perdido')) AS ativos,
@@ -35,10 +37,10 @@ async function stats(req, res) {
           AND COALESCE(l.status_atualizado_em, l.created_at) < NOW() - INTERVAL '24 hours'
         )                                                                         AS sla_critico,
         COUNT(*) FILTER (WHERE l.created_at >= NOW() - INTERVAL '30 days')       AS ultimos_30_dias,
-        COUNT(*) FILTER (
-          WHERE l.status_atual = 'matricula_concluida'
-          AND l.status_atualizado_em >= NOW() - INTERVAL '30 days'
-        )                                                                         AS matriculas_30_dias
+        SUM(CASE WHEN l.status_atual = 'matricula_concluida'
+             AND l.status_atualizado_em >= NOW() - INTERVAL '30 days'
+             THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))::int
+             ELSE 0 END)                                                          AS matriculas_30_dias
        FROM leads l
        ${where}`,
       params
@@ -75,7 +77,9 @@ async function stats(req, res) {
          EXTRACT(MONTH FROM l.created_at)::int AS mes_num,
          EXTRACT(YEAR FROM l.created_at)::int AS ano,
          COUNT(*) AS leads,
-         COUNT(*) FILTER (WHERE l.status_atual = 'matricula_concluida') AS matriculas
+         SUM(CASE WHEN l.status_atual = 'matricula_concluida'
+              THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))::int
+              ELSE 0 END) AS matriculas
        FROM leads l
        ${where.replace('WHERE 1=1', "WHERE l.created_at >= NOW() - INTERVAL '12 months'")}
        GROUP BY mes, mes_num, ano
@@ -121,7 +125,9 @@ async function stats(req, res) {
       `SELECT
          COALESCE(p.nome, 'Não informado') AS processo,
          COUNT(*) AS total,
-         COUNT(*) FILTER (WHERE l.status_atual = 'matricula_concluida') AS matriculados
+         SUM(CASE WHEN l.status_atual = 'matricula_concluida'
+              THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))::int
+              ELSE 0 END) AS matriculados
        FROM leads l
        LEFT JOIN processos_matricula p ON l.processo_id = p.id
        ${where}
