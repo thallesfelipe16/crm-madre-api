@@ -226,11 +226,10 @@ async function getStats(req, res) {
              THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))
              ELSE 0 END)::int, 0) AS matriculas,
         COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'perdido')::int AS perdidos,
-        COUNT(DISTINCT o.id)::int AS total_observacoes
+        (SELECT COUNT(*)::int FROM observacoes o WHERE o.usuario_id = u.id) AS total_observacoes
       FROM usuarios u
       LEFT JOIN unidades un ON u.unidade_id = un.id
       LEFT JOIN leads l ON l.responsavel_id = u.id
-      LEFT JOIN observacoes o ON o.usuario_id = u.id
       WHERE u.status = 'ativo' AND u.perfil NOT IN ('n8n_service')
       GROUP BY u.id, u.nome, u.email, u.perfil, u.status, u.foto_url, un.nome
       ORDER BY total_leads DESC, u.nome
