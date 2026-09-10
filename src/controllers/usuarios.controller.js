@@ -219,20 +219,17 @@ async function getStats(req, res) {
       SELECT
         u.id, u.nome, u.email, u.perfil, u.status, u.foto_url,
         un.nome AS unidade_nome,
-        COUNT(DISTINCT l.id)::int AS total_leads,
-        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'novo_lead')::int AS nao_atendidos,
-        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual NOT IN ('novo_lead','perdido','matricula_concluida'))::int AS em_atendimento,
-        COALESCE(SUM(CASE WHEN l.status_atual = 'matricula_concluida'
-             THEN GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id))
-             ELSE 0 END)::int, 0) AS matriculas,
-        COUNT(DISTINCT l.id) FILTER (WHERE l.status_atual = 'perdido')::int AS perdidos,
+        (SELECT COUNT(*)::int FROM leads l WHERE l.responsavel_id = u.id) AS total_leads,
+        (SELECT COUNT(*)::int FROM leads l WHERE l.responsavel_id = u.id AND l.status_atual = 'novo_lead') AS nao_atendidos,
+        (SELECT COUNT(*)::int FROM leads l WHERE l.responsavel_id = u.id AND l.status_atual NOT IN ('novo_lead','perdido','matricula_concluida')) AS em_atendimento,
+        (SELECT COALESCE(SUM(GREATEST(1, (SELECT COUNT(*) FROM lead_alunos la WHERE la.lead_id = l.id)))::int, 0)
+         FROM leads l WHERE l.responsavel_id = u.id AND l.status_atual = 'matricula_concluida') AS matriculas,
+        (SELECT COUNT(*)::int FROM leads l WHERE l.responsavel_id = u.id AND l.status_atual = 'perdido') AS perdidos,
         (SELECT COUNT(*)::int FROM observacoes o WHERE o.usuario_id = u.id) AS total_observacoes
       FROM usuarios u
       LEFT JOIN unidades un ON u.unidade_id = un.id
-      LEFT JOIN leads l ON l.responsavel_id = u.id
       WHERE u.status = 'ativo' AND u.perfil NOT IN ('n8n_service')
-      GROUP BY u.id, u.nome, u.email, u.perfil, u.status, u.foto_url, un.nome
-      ORDER BY total_leads DESC, u.nome
+      ORDER BY (SELECT COUNT(*) FROM leads l WHERE l.responsavel_id = u.id) DESC, u.nome
     `);
     return res.json(rows);
   } catch (err) {
